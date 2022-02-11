@@ -3,18 +3,26 @@
 	11FEB2022
 	Jabbers Ironman Roguelike
 
-    Features:
-        - 100% Customizable Roguelike experience
+    FEATURES
+        - 100% Customizable Roguelike experience through MCM (or config parameters in the code if you prefer)
+        - 100% (as far as I know) conflict free from other mods.  Jabbers' Ironman Roguelike does not overwrite 
+        any scripts or ltx files and because of this it should not interfere with any other mods.   If it does
+        please let me know so I can resolve.
         - Restore player created stashes and items within between Ironman playthroughs
+            - Player stashes are be marked on your PDA map just stash locations from missions
+            - Item condition degredation applied to each applicable item between Ironman playthroughs
         - Restore trader rep with optional penalty loss between Ironman playthroughs
             - Trader rep will never go below the value a trader receives at the start of a new game
         - Restore character rep with optional penalty loss between Ironman playthroughs
             - Character rep will never go below the value the character receives at the start of a new game
+        - All Stashes/Items/Rep are saved based on faction so that seperate Ironman playthroughs of each faction
+        do not interfere with each other.  IE: Stashes created on a Loner playthrough will not be seen on a 
+        Military playthrough and vice versa.
         - Ability for other mods to save data to be used in concurent playthroughs via scripting callbacks
             - RegisterScriptCallback("on_roguelike_load_state", on_roguelike_load_state)
                 -- on_roguelike_load_state(data) --<table> access to all prior Ironman session saved data
             - RegisterScriptCallback("on_roguelike_save_state", on_roguelike_save_state)
-                -- on_roguelike_load_state(data) --<table> store any data that you want to read at the start of Ironman session
+                -- on_roguelike_load_state(data) --<table> store data that you want to read at the start of Ironman session
 --]]
 
 local config = {
