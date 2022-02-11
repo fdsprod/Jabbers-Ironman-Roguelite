@@ -1,19 +1,19 @@
 function on_mcm_load()
     local op = { 
-        id = "roguelike",
+        id = "roguelite",
         sh = true,
         gr = {
             {
                 id = "title", 
                 type = "slide", 
                 link = "ui_options_slider_gameplay_diff",
-                text = "ui_mcm_roguelike_title",
+                text = "ui_mcm_roguelite_title",
                 size = {512,50}, 
                 spacing = 20
             },
             --Global Settings
             {
-                id = "is_roguelike_enabled",
+                id = "is_roguelite_enabled",
                 type = "check",
                 val = 1,
                 def = true
@@ -30,7 +30,7 @@ function on_mcm_load()
             { 
                 id = "desc_mcm",
                 type = "desc",
-                text = "ui_mcm_roguelike_stashes_description",
+                text = "ui_mcm_roguelite_stashes_description",
                 clr = {175, 255 ,0 ,0},
             },
             { id = "line", type = "line" },
@@ -61,7 +61,7 @@ function on_mcm_load()
             { 
                 id = "desc_mcm",
                 type = "desc",
-                text = "ui_mcm_roguelike_trader_rep_description",
+                text = "ui_mcm_roguelite_trader_rep_description",
                 clr = {175, 255 ,0 ,0},
             },
             { id = "line", type = "line" },
@@ -86,7 +86,7 @@ function on_mcm_load()
             { 
                 id = "desc_mcm",
                 type = "desc",
-                text = "ui_mcm_roguelike_character_rep_description",
+                text = "ui_mcm_roguelite_character_rep_description",
                 clr = {175, 255 ,0 ,0},
             },
             { id = "line", type = "line" },
@@ -111,6 +111,6 @@ function on_mcm_load()
 end
 
 function get_config(key)
-    local opt = ui_mcm and ui_mcm.get("roguelike/"..key) 
+    local opt = ui_mcm and ui_mcm.get("roguelite/"..key) 
     return opt
  end

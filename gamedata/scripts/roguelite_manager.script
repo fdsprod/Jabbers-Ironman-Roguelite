@@ -1,11 +1,11 @@
 --[[
 	Jabbers
 	11FEB2022
-	Jabbers Ironman Roguelike
+	Jabbers Ironman Roguelite
 
     FEATURES
-        - 100% Customizable Roguelike experience through MCM (or config parameters in the code if you prefer)
-        - 100% (as far as I know) conflict free from other mods.  Jabbers' Ironman Roguelike does not overwrite 
+        - 100% Customizable Roguelite experience through MCM (or config parameters in the code if you prefer)
+        - 100% (as far as I know) conflict free from other mods.  Jabbers' Ironman Roguelite does not overwrite 
         any scripts or ltx files and because of this it should not interfere with any other mods.   If it does
         please let me know so I can resolve.
         - Restore player created stashes and items within between Ironman playthroughs
@@ -19,15 +19,15 @@
         do not interfere with each other.  IE: Stashes created on a Loner playthrough will not be seen on a 
         Military playthrough and vice versa.
         - Ability for other mods to save data to be used in concurent playthroughs via scripting callbacks
-            - RegisterScriptCallback("on_roguelike_load_state", on_roguelike_load_state)
-                -- on_roguelike_load_state(data) --<table> access to all prior Ironman session saved data
-            - RegisterScriptCallback("on_roguelike_save_state", on_roguelike_save_state)
-                -- on_roguelike_load_state(data) --<table> store data that you want to read at the start of Ironman session
+            - RegisterScriptCallback("on_roguelite_load_state", on_roguelite_load_state)
+                -- on_roguelite_load_state(data) --<table> access to all prior Ironman session saved data
+            - RegisterScriptCallback("on_roguelite_save_state", on_roguelite_save_state)
+                -- on_roguelite_load_state(data) --<table> store data that you want to read at the start of Ironman session
 --]]
 
 local config = {
-    -- Enables or Disables the entire roguelike experience
-    is_roguelike_enabled = true,
+    -- Enables or Disables the entire roguelite experience
+    is_roguelite_enabled = true,
     -- Allows log output for debugging
     debug = true,
     -- Enables or Disables the restoration of player stashes for new games
@@ -97,9 +97,9 @@ end
 local function debug_write(output)
     if config.debug then
         if (type(output) == "table") then
-            utils_data.debug_write(print_table(output))
+            utils_data.debug_write("Roguelite Manager: "..print_table(output))
         else
-            utils_data.debug_write(output)
+            utils_data.debug_write("Roguelite Manager: "..output)
         end
     end
 end
@@ -122,7 +122,7 @@ local function restore_prior_state_stashes(data)
                 item_data.id = se_obj.id
                 m_data.stashes[item_data.id] = item_data
 
-                debug_write("Roguelike Manager: Restored player stash " .. item_data.txt .. ".")
+                debug_write("Restored player stash " .. item_data.txt .. ".")
             end
         end
     end
@@ -144,10 +144,10 @@ local function restore_prior_state_trader_rep(data)
 
         -- Only set the npc rept if it will not go below the new game value
         if rept > ncp_rept then
-            debug_write("Roguelike Manager: Updating repuation for trader "..npc:character_name().." to "..tostring(rept)..".")
+            debug_write("Updating repuation for trader "..npc:character_name().." to "..tostring(rept)..".")
             npc:set_character_reputation(rept)
         else
-            debug_write("Roguelike Manager: Reputation "..tostring(rept).." not set for trader "..npc:character_name().." as it is below the starting rep of "..tostring(ncp_rept)..".")
+            debug_write("Reputation "..tostring(rept).." not set for trader "..npc:character_name().." as it is below the starting rep of "..tostring(ncp_rept)..".")
         end
     end
 
@@ -181,7 +181,7 @@ end
 
 local function restore_prior_state_actor_rep(data)
     if not data.actor_miscellaneous.actual_rep then
-        debug_write("Roguelike Manager: No player reputation was recorded.")
+        debug_write("No player reputation was recorded.")
         return
     end
     local rept = data.actor_miscellaneous.actual_rep
@@ -194,7 +194,7 @@ local function restore_prior_state_actor_rep(data)
     end
 
     if rept < game_statistics.actor_miscellaneous.actual_rep then
-        debug_write("Roguelike Manager: Reputation "..tostring(rept).." not set for the player as it is below the starting rep of "..tostring(game_statistics.actor_miscellaneous.actual_rep)..".")
+        debug_write("Reputation "..tostring(rept).." not set for the player as it is below the starting rep of "..tostring(game_statistics.actor_miscellaneous.actual_rep)..".")
         return
     end
 
@@ -206,10 +206,10 @@ local function load_prior_state()
     local faction = alife():actor():community()
 
     if not faction then
-        debug_write("Roguelike Manager: Error finding player faction")
+        debug_write("Error finding player faction")
     end
 
-    local file_path = "appdata\\roguelike_"..faction..".state"
+    local file_path = "appdata\\roguelite_"..faction..".state"
     local file = io.open(file_path, "rb")
 
     if not file then
@@ -221,7 +221,7 @@ local function load_prior_state()
     file:close()
 
     if not (data and data ~= "") then
-        debug_write("Roguelike Manager: Error unable to write to " .. file_path)
+        debug_write("Error unable to write to " .. file_path)
         return
     end
 
@@ -237,7 +237,7 @@ local function load_prior_state()
         restore_prior_state_actor_rep(data)
     end
 
-	SendScriptCallback("on_roguelike_load_state", data)
+	SendScriptCallback("on_roguelite_load_state", data)
 end
 
 local function get_player_trader_rep()
@@ -252,7 +252,7 @@ local function get_player_trader_rep()
 				if npc:relation(db.actor) ~= game_object.enemy then
                     if (alife_state.actor_contacts and alife_state.actor_contacts[db.OnlineStalkers[i]]) then
                         local rep = npc:character_reputation()
-                        debug_write("Roguelike Manager: Storing trader "..npc:character_name().." with rep "..tostring(rep)..".")
+                        debug_write("Storing trader "..npc:character_name().." with rep "..tostring(rep)..".")
 					    trader_rep[npc:character_name()] = rep
                     end
 				end
@@ -266,7 +266,7 @@ local function get_player_trader_rep()
             local npc = db.storage[id] and db.storage[id].object
             if npc then
                 local rep = npc:character_reputation()
-                debug_write("Roguelike Manager: Storing trader "..npc:character_name().." with rep "..tostring(rep)..".")
+                debug_write("Storing trader "..npc:character_name().." with rep "..tostring(rep)..".")
                 trader_rep[npc:character_name()] = rep
             end
         end
@@ -286,21 +286,22 @@ local function compact(t)
     end
 end
 
-local function degrade(condition)
+local function degrade(name, condition)
     local degrade_amount = condition * config.stash_item_condition_loss_percent
-    condition = condition - degrade_amount
-    return condition
+    local new_condition = condition - degrade_amount
+    debug_write("Rogue Manager: Degrading "..name.." from "..condition.." to "..new_condition)
+    return new_condition
 end
 
 local function try_spawn_stash(box)
     local stash = m_data.stashes[box:id()]
 
     if not stash then
-        debug_write("Roguelike Manager: No stash data found for " .. box:id() .. ".")
+        debug_write("No stash data found for " .. box:id() .. ".")
         return
     end
 
-    debug_write("Roguelike Manager: Populating stash")
+    debug_write("Populating stash")
 
     local se_box = alife_object(box:id())
     local item_processor = itms_manager.get_item_processor()
@@ -310,15 +311,15 @@ local function try_spawn_stash(box)
     for _, item_data in pairs(stash.items) do
         local section = item_data.section
 
-        debug_write("Roguelike Manager: Creating item " .. section .. "...")
+        debug_write("Creating item " .. section .. "...")
 
         local se_obj = alife_create(section, se_box.position, se_box.m_level_vertex_id, se_box.m_game_vertex_id, se_box.id, false)
 
         if se_obj then
-            debug_write("Roguelike Manager: Created item " .. se_obj:name())
+            debug_write("Created item " .. se_obj:name())
 
             if IsWeapon(se_obj) then
-                debug_write("Roguelike Manager: Creating weapon data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
+                debug_write("Creating weapon data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
 
                 local data = utils_stpk.get_weapon_data(se_obj)
 
@@ -327,7 +328,7 @@ local function try_spawn_stash(box)
                 data.weapon_state = item_data.weapon_state
                 data.addon_flags = item_data.addon_flags
                 data.ammo_type = item_data.ammo_type
-                data.condition = degrade(item_data.condition)
+                data.condition = degrade(se_obj:name(), item_data.condition)
                 data.upgrades = item_data.upgrades
                 data.visual_name = item_data.visual_name
                 data.visual_flags = item_data.visual_flags
@@ -338,7 +339,7 @@ local function try_spawn_stash(box)
 
                 utils_stpk.set_weapon_data(data, se_obj)
             elseif IsAmmo(se_obj) then
-                debug_write("Roguelike Manager: Creating ammo data for " .. se_obj:name() .. " " .. se_obj.id .. ".")
+                debug_write("Creating ammo data for " .. se_obj:name() .. " " .. se_obj.id .. ".")
 
                 local data = utils_stpk.get_ammo_data(se_obj)
 
@@ -352,7 +353,7 @@ local function try_spawn_stash(box)
 
                 utils_stpk.set_ammo_data(data, se_obj)
             else
-                debug_write("Roguelike Manager: Creating item data " .. se_obj:name() .. " " .. se_obj.id ..".")
+                debug_write("Creating item data " .. se_obj:name() .. " " .. se_obj.id ..".")
 
                 local data = utils_stpk.get_item_data(se_obj)
 
@@ -386,12 +387,12 @@ local function get_player_stashes()
     local stash_data = {}
     local sim = alife()
 
-    debug_write("Roguelike Manager: Searching for player stashes")
+    debug_write("Searching for player stashes")
     -- First find all the stashes
     for i = 1, 65534 do
         local se_obj = sim:object(i)
         if se_obj and se_obj:section_name() == "inv_backpack" and se_obj.parent_id ~= AC_ID then
-            debug_write("Roguelike Manager: Found player stash " .. se_obj:name() .. " " .. se_obj.id .. ".")
+            debug_write("Found player stash " .. se_obj:name() .. " " .. se_obj.id .. ".")
             local txt = strformat(game.translate_string("st_itm_stash_of_character"), db.actor:character_name())
             local pos = se_obj.position
 
@@ -411,11 +412,11 @@ local function get_player_stashes()
     end
 
     if not next(stash_data) then
-        debug_write("Roguelike Manager: No player stashes found.")
+        debug_write("No player stashes found.")
         return stash_data
     end
 
-    debug_write("Roguelike Manager: Searching for items in player stashes")
+    debug_write("Searching for items in player stashes")
     -- Second iterate all items and find the ones with the parent_id of a found stash
     for i = 1, 65534 do
         local se_obj = sim:object(i)
@@ -424,7 +425,7 @@ local function get_player_stashes()
             local stash = stash_data[se_obj.parent_id]
 
             if stash then
-                debug_write("Roguelike Manager: Found stash item " .. se_obj:name() .. " " .. se_obj.id ..".")
+                debug_write("Found stash item " .. se_obj:name() .. " " .. se_obj.id ..".")
 
                 local section = se_obj:section_name()
                 local stash_item_data = {
@@ -434,7 +435,7 @@ local function get_player_stashes()
                 }
 
                 if IsWeapon(se_obj) then
-                    debug_write("Roguelike Manager: Gathering weapon data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
+                    debug_write("Gathering weapon data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
                     local data = utils_stpk.get_weapon_data(se_obj)
 
                     stash_item_data.ammo_current = data.ammo_current
@@ -452,7 +453,7 @@ local function get_player_stashes()
                     stash_item_data.object_flags = data.object_flags
                     stash_item_data.custom_data = data.custom_data
                 elseif IsAmmo(se_obj) then
-                    debug_write("Roguelike Manager: Gathering ammo data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
+                    debug_write("Gathering ammo data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
                     local data = utils_stpk.get_ammo_data(se_obj)
 
                     stash_item_data.condition = data.condition
@@ -466,7 +467,7 @@ local function get_player_stashes()
 
                     stash_item_data.ammo_left = data.ammo_left
                 else
-                    debug_write("Roguelike Manager: Gathering item data " .. se_obj:name() .. " " ..se_obj.id .. ".")
+                    debug_write("Gathering item data " .. se_obj:name() .. " " ..se_obj.id .. ".")
                     local data = utils_stpk.get_item_data(se_obj)
 
                     stash_item_data.condition = data.condition
@@ -497,28 +498,28 @@ local function persist(save_data)
     local faction = alife():actor():community()
 
     if not faction then
-        debug_write("Roguelike Manager: Error finding player faction")
+        debug_write("Error finding player faction")
     end
 
     local data = marshal.encode(save_data)
 
     if not (data) then
-        debug_write("Roguelike Manager: No data to save.")
+        debug_write("No data to save.")
         return
     end
 
-    local file_path = "appdata\\roguelike_"..faction..".state"
+    local file_path = "appdata\\roguelite_"..faction..".state"
     local file = io.open(file_path, "wb")
 
     if not (io.type(file) == "file") then
-        debug_write("Roguelike Manager: Error unable to write to " .. file_path)
+        debug_write("Error unable to write to " .. file_path)
         return
     end
 
     file:write(data)
     file:close()
 
-    debug_write("Roguelike Manager: Saved")
+    debug_write("Saved")
 end
 
 --------------------------------
@@ -527,48 +528,48 @@ end
 
 local function save_state(data)
     if not IsHardcoreMode() then
-        debug_write("Roguelike Manager: save_state not an ironman game mode.")
+        debug_write("save_state not an ironman game mode.")
         return
     end
 
-    if not data.roguelike_manager then
-        data.roguelike_manager = {}
+    if not data.roguelite_manager then
+        data.roguelite_manager = {}
     end
 
     compact(m_data.stashes)
     compact(m_data.uses_data)
     compact(m_data.trader_rep)
 
-    data.roguelike_manager.data = m_data
+    data.roguelite_manager.data = m_data
 end
 
 local function load_state(data)
     if not IsHardcoreMode() then
-        debug_write("Roguelike Manager: load_state not an ironman game mode.")
+        debug_write("load_state not an ironman game mode.")
         return
     end
 
-    if not data.roguelike_manager then
+    if not data.roguelite_manager then
         return
     end
 
-    m_data = data.roguelike_manager.data or m_data
+    m_data = data.roguelite_manager.data or m_data
 
-    data.roguelike_manager.data = nil
+    data.roguelite_manager.data = nil
 end
 
 local function actor_on_before_death(whoID, flags)
-    if not config.is_roguelike_enabled then
-        debug_write("Roguelike Manager: actor_on_before_death roguelike disabled.")
+    if not config.is_roguelite_enabled then
+        debug_write("actor_on_before_death roguelite disabled.")
         return
     end
 
     if not IsHardcoreMode() then
-        debug_write("Roguelike Manager: actor_on_before_death not an ironman game mode.")
+        debug_write("actor_on_before_death not an ironman game mode.")
         return
     end
 
-    debug_write("Roguelike Manager: Actor died")
+    debug_write("Actor died")
 
     local save_data = {}
 
@@ -580,35 +581,35 @@ local function actor_on_before_death(whoID, flags)
 	save_data.actor_visited_levels = game_statistics.actor_visited_levels
 	save_data.actor_visited_smarts = game_statistics.actor_visited_smarts
 
-	SendScriptCallback("on_roguelike_save_data", save_data)
+	SendScriptCallback("on_roguelite_save_data", save_data)
 
     persist(save_data)
 end
 
 local function actor_on_first_update()
-    if not config.is_roguelike_enabled then
-        debug_write("Roguelike Manager: actor_on_first_update roguelike disabled.")
+    if not config.is_roguelite_enabled then
+        debug_write("actor_on_first_update roguelite disabled.")
         return
     end
 
     if IsHardcoreMode() then
         local data = alife_storage_manager.get_state()
-        if not data.roguelike_stash_spawn_complete then
-            debug_write("Roguelike Manager: Initializing stashes from prior Ironman games.")
+        if not data.roguelite_stash_spawn_complete then
+            debug_write("Initializing stashes from prior Ironman games.")
             load_prior_state()
-            data.roguelike_stash_spawn_complete = true
+            data.roguelite_stash_spawn_complete = true
         end
     end
 end
 
 local function physic_object_on_use_callback(box, who)
-    if not config.is_roguelike_enabled then
-        debug_write("Roguelike Manager: physic_object_on_use_callback roguelike disabled.")
+    if not config.is_roguelite_enabled then
+        debug_write("physic_object_on_use_callback roguelite disabled.")
         return
     end
 
     if not IsHardcoreMode() then
-        debug_write("Roguelike Manager: physic_object_on_use_callback not an ironman game mode.")
+        debug_write("physic_object_on_use_callback not an ironman game mode.")
         return
     end
 
@@ -618,13 +619,13 @@ local function physic_object_on_use_callback(box, who)
 end
 
 local function actor_on_item_put_in_box(box, item)
-    if not config.is_roguelike_enabled then
-        debug_write("Roguelike Manager: actor_on_item_put_in_box roguelike disabled.")
+    if not config.is_roguelite_enabled then
+        debug_write("actor_on_item_put_in_box roguelite disabled.")
         return
     end
 
     if not IsHardcoreMode() then
-        debug_write("Roguelike Manager: actor_on_item_put_in_box not an ironman game mode.")
+        debug_write("actor_on_item_put_in_box not an ironman game mode.")
         return
     end
 
@@ -642,11 +643,11 @@ end
 
 
 function on_option_change()
-    debug_write("Roguelike Manager: MCM Options Changed")
+    debug_write("MCM Options Changed")
 
-    local get_config = roguelike_manager_mcm.get_config
+    local get_config = roguelite_manager_mcm.get_config
 
-    config.is_roguelike_enabled = get_config("is_roguelike_enabled")
+    config.is_roguelite_enabled = get_config("is_roguelite_enabled")
     config.debug = get_config("debug")
     config.is_stash_restore_enabled = get_config("is_stash_restore_enabled")
     config.show_stashes_on_pda = get_config("show_stashes_on_pda")
@@ -656,15 +657,15 @@ function on_option_change()
     config.is_character_rep_restore_enabled = get_config("is_character_rep_restore_enabled")
     config.character_rep_penalty_percent = get_config("character_rep_penalty_percent")
     
-    debug_write("Roguelike Manager: is_roguelike_enabled = "..tostring(config.is_roguelike_enabled))
-    debug_write("Roguelike Manager: debug = "..tostring(config.debug))
-    debug_write("Roguelike Manager: is_stash_restore_enabled = "..tostring(config.is_stash_restore_enabled))
-    debug_write("Roguelike Manager: show_stashes_on_pda = "..tostring(config.show_stashes_on_pda))
-    debug_write("Roguelike Manager: stash_item_condition_loss_percent = "..tostring(config.stash_item_condition_loss_percent))
-    debug_write("Roguelike Manager: is_trader_rep_restore_enabled = "..tostring(config.is_trader_rep_restore_enabled))
-    debug_write("Roguelike Manager: trader_rep_penalty_percent = "..tostring(config.trader_rep_penalty_percent))
-    debug_write("Roguelike Manager: is_character_rep_restore_enabled = "..tostring(config.is_character_rep_restore_enabled))
-    debug_write("Roguelike Manager: character_rep_penalty_percent = "..tostring(config.character_rep_penalty_percent))
+    debug_write("is_roguelite_enabled = "..tostring(config.is_roguelite_enabled))
+    debug_write("debug = "..tostring(config.debug))
+    debug_write("is_stash_restore_enabled = "..tostring(config.is_stash_restore_enabled))
+    debug_write("show_stashes_on_pda = "..tostring(config.show_stashes_on_pda))
+    debug_write("stash_item_condition_loss_percent = "..tostring(config.stash_item_condition_loss_percent))
+    debug_write("is_trader_rep_restore_enabled = "..tostring(config.is_trader_rep_restore_enabled))
+    debug_write("trader_rep_penalty_percent = "..tostring(config.trader_rep_penalty_percent))
+    debug_write("is_character_rep_restore_enabled = "..tostring(config.is_character_rep_restore_enabled))
+    debug_write("character_rep_penalty_percent = "..tostring(config.character_rep_penalty_percent))
 end
 
 function on_game_start()
@@ -675,7 +676,7 @@ function on_game_start()
     RegisterScriptCallback("actor_on_before_death", actor_on_before_death)
     RegisterScriptCallback("physic_object_on_use_callback", physic_object_on_use_callback)
 
-    debug_write("Roguelike Manager: Registered")
+    debug_write("Registered")
 end
 
 
