@@ -1,0 +1,116 @@
+function on_mcm_load()
+    local op = { 
+        id = "roguelike",
+        sh = true,
+        gr = {
+            {
+                id = "title", 
+                type = "slide", 
+                link = "ui_options_slider_gameplay_diff",
+                text = "ui_mcm_roguelike_title",
+                size = {512,50}, 
+                spacing = 20
+            },
+            --Global Settings
+            {
+                id = "is_roguelike_enabled",
+                type = "check",
+                val = 1,
+                def = true
+            },
+            {
+                id = "debug",
+                type = "check",
+                val = 1,
+                def = true
+            },
+
+            --Player Stash Settings
+            { id = "line" , type = "line" },
+            { 
+                id = "desc_mcm",
+                type = "desc",
+                text = "ui_mcm_roguelike_stashes_description",
+                clr = {175, 255 ,0 ,0},
+            },
+            { id = "line", type = "line" },
+            {
+                id = "is_stash_restore_enabled",
+                type = "check",
+                val = 1,
+                def = true
+            },
+            {
+                id = "show_stashes_on_pda",
+                type = "check",
+                val = 1,
+                def = true
+            },
+            { 
+                id = "stash_item_condition_loss_percent",
+                type = "track", 
+                val = 2, 
+                min = 0,
+                max = 1, 
+                step = 0.01, 
+                def = 0.01
+            },
+
+            --Trader Reputation Settings
+            { id = "line", type = "line" },
+            { 
+                id = "desc_mcm",
+                type = "desc",
+                text = "ui_mcm_roguelike_trader_rep_description",
+                clr = {175, 255 ,0 ,0},
+            },
+            { id = "line", type = "line" },
+            {
+                id = "is_trader_rep_restore_enabled",
+                type = "check",
+                val = 1,
+                def = true
+            },
+            { 
+                id = "trader_rep_penalty_percent",
+                type = "track", 
+                val = 2, 
+                min = 0,
+                max = 1, 
+                step = 0.02, 
+                def = 0.02
+            },
+
+            --Charater Reputation Settings
+            { id = "line", type = "line" },
+            { 
+                id = "desc_mcm",
+                type = "desc",
+                text = "ui_mcm_roguelike_character_rep_description",
+                clr = {175, 255 ,0 ,0},
+            },
+            { id = "line", type = "line" },
+            {
+                id = "is_character_rep_restore_enabled",
+                type = "check",
+                val = 1,
+                def = true
+            },
+            { 
+                id = "character_rep_penalty_percent",
+                type = "track", 
+                val = 2, 
+                min = 0,
+                max = 1, 
+                step = 0.02, 
+                def = 0.02
+            },
+        }
+    }
+    return op
+end
+
+function get_config(key)
+    local opt = ui_mcm and ui_mcm.get("roguelike/"..key) 
+    return opt
+ end

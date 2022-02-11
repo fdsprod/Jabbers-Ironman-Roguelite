@@ -1,0 +1,52 @@
+<string_table>
+	<string id="ui_mcm_menu_roguelike">
+		<text>Железный человек-рогалик</text>
+	</string>
+
+    <!--Global Settings-->
+    <string id="ui_mcm_roguelike_title">
+        <text>Jabbers' Железный человек-рогалик Настройки</text>
+    </string>
+    <string id="ui_mcm_roguelike_is_roguelike_enabled">
+        <text>Включено</text>
+    </string>
+    <string id="ui_mcm_roguelike_debug">
+        <text>Отлаживать</text>
+    </string>
+
+    <!--Player Stash Settings-->
+    <string id="ui_mcm_roguelike_stashes_description">
+        <text>Сохранение тайников игрока</text>
+    </string>
+    <string id="ui_mcm_roguelike_is_stash_restore_enabled">
+        <text>Включено</text>
+    </string>
+    <string id="ui_mcm_roguelike_show_stashes_on_pda">
+        <text>Показывать восстановленные тайники игроков на КПК</text>
+    </string>
+    <string id="ui_mcm_roguelike_stash_item_condition_loss_percent">
+        <text>% ухудшения состояния предмета между прохождениями</text>
+    </string>
+
+    <!--Trader Reputation Settings-->
+    <string id="ui_mcm_roguelike_trader_rep_description">
+        <text>Постоянство репутации трейдера</text>
+    </string>
+    <string id="ui_mcm_roguelike_is_trader_rep_restore_enabled">
+        <text>Включено</text>
+    </string>
+    <string id="ui_mcm_roguelike_trader_rep_penalty_percent">
+        <text>% потери репутации трейдера между прохождениями</text>
+    </string>
+
+    <!--Charater Reputation Settings-->
+    <string id="ui_mcm_roguelike_character_rep_description">
+        <text>Стойкость репутации персонажа</text>
+    </string>
+    <string id="ui_mcm_roguelike_is_character_rep_restore_enabled">
+        <text>Включено</text>
+    </string>
+    <string id="ui_mcm_roguelike_character_rep_penalty_percent">
+        <text>Персонаж между потерями % между прохождениями</text>
+    </string>
+</string_table>

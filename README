@@ -1,0 +1,53 @@
+Jabbers' Ironman Roguelike
+Discord: https://discord.gg/HRyCGesuXq
+Twitch: https://www.twitch.tv/jabbers_
+
+DESCRIPTION
+
+    The goal of this mod is to give the player a more progressive approach to Ironman playthrough by allowing certain 
+    aspects of a prior playthrough to be tracked and restored on successive playthroughs.  The system currently has 
+    the following features...
+
+FEATURES
+    - 100% Customizable Roguelike experience through MCM (or config parameters in the code if you prefer)
+    - 100% (as far as I know) conflict free from other mods.  Jabbers' Ironman Roguelike does not overwrite 
+      any scripts or ltx files and because of this it should not interfere with any other mods.   If it does
+      please let me know so I can resolve.
+    - Restore player created stashes and items within between Ironman playthroughs
+        - Player stashes are be marked on your PDA map just stash locations from missions
+        - Item condition degredation applied to each applicable item between Ironman playthroughs
+    - Restore trader rep with optional penalty loss between Ironman playthroughs
+        - Trader rep will never go below the value a trader receives at the start of a new game
+    - Restore character rep with optional penalty loss between Ironman playthroughs
+        - Character rep will never go below the value the character receives at the start of a new game
+    - All Stashes/Items/Rep are saved based on faction so that seperate Ironman playthroughs of each faction
+      do not interfere with each other.  IE: Stashes created on a Loner playthrough will not be seen on a 
+      Military playthrough and vice versa.
+    - Ability for other mods to save data to be used in concurent playthroughs via scripting callbacks
+        - RegisterScriptCallback("on_roguelike_load_state", on_roguelike_load_state)
+            -- on_roguelike_load_state(data) --<table> access to all prior Ironman session saved data
+        - RegisterScriptCallback("on_roguelike_save_state", on_roguelike_save_state)
+            -- on_roguelike_load_state(data) --<table> store data that you want to read at the start of Ironman session
+
+INSTALLATION
+    Simply extract into your S.T.A.L.K.E.R. Anomaly installation folder.
+
+FAQ
+    Q: Doesn't this already exist with the Azazel game mode? 
+    A: Not really, while Azazel does allows you to continue as a new stalker after dieing, it's missing the "start over" 
+      aspect that Ironman provides.  In roguelike games, when you die, you are dead and you need to start over.  This is what
+      Ironman is about.  That said, usually roguelike games also give you some sort of progression to make successive playthroughs 
+      a bit easier, usually through something like achievements, skills, items, etc.  This is what I hope to capture with this mod.
+    Q: How do I reset an Ironman playthrough so the stashes/rep/etc are not restored on my next playthrough
+    A: Simply delete the file in appdata pertaining to the faction you want to start over with.  Ex: appdata/roguelike_actor_bandit.state
+    Q: I have an idea for progression that isnt included in this mod, how do I contact you.
+    A: Well, the easiest way would be discord.  You can join my personal discord (https://discord.gg/HRyCGesuXq) and message me direct.
+       I can also be found live most days on Twitch (https://www.twitch.tv/jabbers_) so feel free to stop by and say Hi! 
+       Additionally you can leave me a message on moddb... although this isnt my preferred communication platform so my response may be 
+       slower.   
+TODO
+    - Implement some sort of Achievement based character progression system.  Example: Finishing the questline "Living Ledgend" might 
+      give the player a permanent bonus to carry weight.  This bonus would be applied on all successive Ironman playthroughs.  
+
+CHANGELOG
+    1.00 - Initial Release

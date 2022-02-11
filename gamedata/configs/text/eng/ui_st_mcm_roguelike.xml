@@ -1,0 +1,52 @@
+<string_table>
+	<string id="ui_mcm_menu_roguelike">
+		<text>Ironman Roguelike</text>
+	</string>
+
+    <!--Global Settings-->
+    <string id="ui_mcm_roguelike_title">
+        <text>Jabbers' Ironman Roguelike Settings</text>
+    </string>
+    <string id="ui_mcm_roguelike_is_roguelike_enabled">
+        <text>Enabled</text>
+    </string>
+    <string id="ui_mcm_roguelike_debug">
+        <text>Debug</text>
+    </string>
+
+    <!--Player Stash Settings-->
+    <string id="ui_mcm_roguelike_stashes_description">
+        <text>Player Stashes Persistence</text>
+    </string>
+    <string id="ui_mcm_roguelike_is_stash_restore_enabled">
+        <text>Enabled</text>
+    </string>
+    <string id="ui_mcm_roguelike_show_stashes_on_pda">
+        <text>Show restored player stashes on your PDA</text>
+    </string>
+    <string id="ui_mcm_roguelike_stash_item_condition_loss_percent">
+        <text>Item condition degredation % between playthroughs</text>
+    </string>
+
+    <!--Trader Reputation Settings-->
+    <string id="ui_mcm_roguelike_trader_rep_description">
+        <text>Trader Reputation Persistence</text>
+    </string>
+    <string id="ui_mcm_roguelike_is_trader_rep_restore_enabled">
+        <text>Enabled</text>
+    </string>
+    <string id="ui_mcm_roguelike_trader_rep_penalty_percent">
+        <text>Trader repuation loss % between playthroughs</text>
+    </string>
+
+    <!--Charater Reputation Settings-->
+    <string id="ui_mcm_roguelike_character_rep_description">
+        <text>Charater Reputation Persistence</text>
+    </string>
+    <string id="ui_mcm_roguelike_is_character_rep_restore_enabled">
+        <text>Enabled</text>
+    </string>
+    <string id="ui_mcm_roguelike_character_rep_penalty_percent">
+        <text>Character between loss % between playthroughs</text>
+    </string>
+</string_table>
