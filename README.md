@@ -6,6 +6,9 @@
 **Twitch**: https://www.twitch.tv/jabbers_
 **Github**: https://github.com/jeffboulanger/Jabbers-Ironman-Roguelite
 
+**DEFINITION 'ROGUELIKE'**
+A subgenre of roguelikes that has most of the game design philosophies of roguelikes but also has at least one progression element that persists after failure
+
 **DESCRIPTION**
 
     This S.T.A.L.K.E.R Anomaly mod gives the player a more progressive approach to Ironman playthrough by allowing certain 
