@@ -287,6 +287,9 @@ local function compact(t)
 end
 
 local function degrade(name, condition)
+    if not condition then
+        return condition
+    end
     local degrade_amount = condition * config.stash_item_condition_loss_percent
     local new_condition = condition - degrade_amount
     debug_write("Rogue Manager: Degrading "..name.." from "..condition.." to "..new_condition)
@@ -343,7 +346,7 @@ local function try_spawn_stash(box)
 
                 local data = utils_stpk.get_ammo_data(se_obj)
 
-                data.condition = degrade(item_data.condition)
+                data.condition = degrade(se_obj:name(), item_data.condition)
                 data.upgrades = item_data.upgrades
                 data.visual_name = item_data.visual_name
                 data.visual_flags = item_data.visual_flags
@@ -357,7 +360,7 @@ local function try_spawn_stash(box)
 
                 local data = utils_stpk.get_item_data(se_obj)
 
-                data.condition = degrade(item_data.condition)
+                data.condition = degrade(se_obj:name(), item_data.condition)
                 data.upgrades = item_data.upgrades
                 data.visual_name = item_data.visual_name
                 data.visual_flags = item_data.visual_flags
