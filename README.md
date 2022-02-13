@@ -55,4 +55,4 @@ Simply extract into your S.T.A.L.K.E.R. Anomaly installation folder.
 
 **CHANGELOG**
 
-- 1.00 - Initial Release
+- 0.1 - Initial Beta Release
