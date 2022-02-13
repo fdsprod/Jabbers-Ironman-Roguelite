@@ -6,7 +6,7 @@
 **Twitch**: https://www.twitch.tv/jabbers_
 **Github**: https://github.com/jeffboulanger/Jabbers-Ironman-Roguelite
 
-**DEFINITION 'ROGUELIKE'** 
+**DEFINITION 'ROGUELITE'** 
  
 A subgenre of roguelikes that has most of the game design philosophies of roguelikes but also has at least one progression element that persists after failure
 
