@@ -116,7 +116,7 @@ local function restore_prior_state_stashes(data)
 
             if se_obj then
                 if config.show_stashes_on_pda then
-                    level.map_add_object_spot_ser(se_obj.id, "treasure", item_data.txt)
+                    level.map_add_object_spot_ser(se_obj.id, "treasure_player", item_data.txt)
                 end
 
                 item_data.id = se_obj.id
