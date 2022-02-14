@@ -52,6 +52,7 @@ Simply extract into your S.T.A.L.K.E.R. Anomaly installation folder.
 **TODO**
 
 - Implement some sort of Achievement based character progression system.  Example: Finishing the questline "Living Ledgend" might give the player a permanent bonus to carry weight.  This bonus would be applied on all successive Ironman playthroughs.  
+- Restore learned recipes
 
 **CHANGELOG**
 
