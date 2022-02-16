@@ -1,10 +1,10 @@
 
 ![Jabbers Ironman Roguelite](https://cdn.discordapp.com/attachments/415664512981794818/941835109521297448/Jabbers_Ironman_Roguelite.gif)  
 
-**Jabbers' Ironman Roguelite**
-**Discord**: https://discord.gg/HRyCGesuXq
-**Twitch**: https://www.twitch.tv/jabbers_
-**Github**: https://github.com/jeffboulanger/Jabbers-Ironman-Roguelite
+**Jabbers' Ironman Roguelite**  
+**Discord**: https://discord.gg/HRyCGesuXq  
+**Twitch**: https://www.twitch.tv/jabbers_  
+**Github**: https://github.com/jeffboulanger/Jabbers-Ironman-Roguelite  
 
 **DEFINITION 'ROGUELITE'** 
  
@@ -57,7 +57,7 @@ Simply extract into your S.T.A.L.K.E.R. Anomaly installation folder.
 
 **CHANGELOG**
 
-- 0.1 - Initial Beta Release
-- 0.2 - [Update] Module API
-        [Fixed] Empty stashes on successive runs
-        [Fixed] Item uses would go to zero
+- 0.1 - Initial Beta Release  
+- 0.2 - [Update] Module API  
+        [Fixed] Empty stashes on successive runs  
+        [Fixed] Item uses would go to zero  
