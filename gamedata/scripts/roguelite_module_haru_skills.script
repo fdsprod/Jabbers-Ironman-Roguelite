@@ -1,0 +1,135 @@
+--[[
+	Jabbers
+	16FEB2022
+	Jabbers Ironman Roguelite
+
+    Created this example code on how to create a module for external mods.  If the skill system mod is not found 
+    this script will not execute.
+--]]
+
+local config = {
+    -- Enables or Disables the restoration of haru skills system for new games
+    is_haru_skills_restore_enabled = true,
+}
+
+local m_data = {
+    version = 1,
+}
+
+--------------------------------
+-- Private stuff and things
+--------------------------------
+local function restore_prior_skills_system_v1(data)
+    if not haru_skills then
+        return
+    end
+
+    haru_skills.skills_levels = data.skills_levels or haru_skills.skills_levels
+    haru_skills.skills_stats = data.skills_stats or haru_skills.skills_stats
+    haru_skills.skills_increments = data.skills_increments or haru_skills.skills_increments
+
+    haru_skills.update_endurance()
+    haru_skills.update_strength()
+    haru_skills.update_survival()
+end
+
+--------------------------------
+-- Game Callbacks
+--------------------------------
+function roguelite_save_state(save_data)
+    if haru_skills then
+        save_data.haru_skills_system_version = m_data.version
+        save_data.haru_skills_system = { 
+            skills_levels = haru_skills.skills_levels,
+            skills_stats = haru_skills.skills_stats,
+            skills_increments = haru_skills.skills_increments
+        }
+    end
+end
+
+function roguelite_load_state(save_data)
+    if config.is_haru_skills_restore_enabled then
+        if save_data.haru_skills_system_version == 1 then
+            restore_prior_skills_system_v1(save_data)
+        end
+    end
+end
+
+function append_mcm_options(gr)
+    if not haru_skills then
+        return 
+    end
+
+    roguelite_manager.debug_write("Appending haru skills system module mcm options.")
+    --Charater Reputation Settings
+    table.insert(gr, { id = "line", type = "line" })
+    table.insert(gr, {
+        id = "desc_mcm",
+        type = "desc",
+        text = "ui_mcm_roguelite_haru_skills_description",
+        clr = {255, 255 ,255 ,0},
+    })
+    table.insert(gr, {
+        id = "is_haru_skills_restore_enabled",
+        type = "check",
+        val = 1,
+        def = false
+    })
+end
+
+function on_option_change()
+    if not haru_skills then
+        return 
+    end
+
+    local get_config = roguelite_manager_mcm.get_config
+
+    config.is_haru_skills_restore_enabled = get_config("is_haru_skills_restore_enabled")
+    config.haru_skill_experience_penalty_percent = get_config("haru_skill_experience_penalty_percent")
+
+    roguelite_manager.debug_write("is_haru_skills_restore_enabled = "..tostring(config.is_haru_skills_restore_enabled))
+    roguelite_manager.debug_write("haru_skill_experience_penalty_percent = "..tostring(config.haru_skill_experience_penalty_percent))
+end
+
+function on_game_load()
+    if ui_mcm then
+	    on_option_change()
+    end
+end
+
+function on_game_start()
+	RegisterScriptCallback("on_game_load", on_game_load)
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

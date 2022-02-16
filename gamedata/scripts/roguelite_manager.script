@@ -115,7 +115,6 @@ local function load_prior_state()
     local data = marshal.decode(data)
     local modules = get_modules()
 
-    debug_write("Module count "..tostring(#modules))
     for name, module in pairs(modules) do
         if module.roguelite_load_state then 
             debug_write("Loading data "..name)

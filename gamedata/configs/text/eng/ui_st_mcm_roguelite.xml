@@ -47,6 +47,9 @@
         <text>Enabled</text>
     </string>
     <string id="ui_mcm_roguelite_character_rep_penalty_percent">
-        <text>Character between loss % between playthroughs</text>
+        <text>Character repuation loss % between playthroughs</text>
+    </string>
+    <string id="ui_mcm_roguelite_character_rank_penalty_percent">
+        <text>Character rank loss % between playthroughs</text>
     </string>
 </string_table>

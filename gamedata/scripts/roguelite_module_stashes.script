@@ -56,7 +56,7 @@ local function restore_prior_state_stashes_v1(data)
                     end
                 end
 
-                roguelite_manager.debug_write("Restored player stash " .. stash_data.txt .. ".")
+                roguelite_manager.debug_write("Restored player stash " .. stash_data.txt .. " with "..tostring(#stash_data.items).." items.")
             end
         end
     end
@@ -372,7 +372,6 @@ function append_mcm_options(gr)
         text = "ui_mcm_roguelite_stashes_description",
         clr = {255, 255 ,255 ,0},
     })
-    table.insert(gr, { id = "line", type = "line" })
     table.insert(gr, {
         id = "is_stash_restore_enabled",
         type = "check",

@@ -29,7 +29,6 @@ function on_mcm_load()
 
     local modules = roguelite_manager.get_modules()
 
-    roguelite_manager.debug_write("Module count "..tostring(#modules))
     for _, module in pairs(modules) do
         if module.append_mcm_options then 
             module.append_mcm_options(op.gr)

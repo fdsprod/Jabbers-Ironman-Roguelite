@@ -135,7 +135,6 @@ function append_mcm_options(gr)
         text = "ui_mcm_roguelite_trader_rep_description",
         clr = {255, 255 ,255 ,0},
     })
-    table.insert(gr, { id = "line", type = "line" })
     table.insert(gr, {
         id = "is_trader_rep_restore_enabled",
         type = "check",
