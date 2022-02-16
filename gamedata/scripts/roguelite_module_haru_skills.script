@@ -10,6 +10,8 @@
 local config = {
     -- Enables or Disables the restoration of haru skills system for new games
     is_haru_skills_restore_enabled = true,
+    -- Percentage loss of each skill when restored for new games
+    haru_skill_system_penalty_percent = 0.02
 }
 
 local m_data = {
@@ -20,13 +22,37 @@ local m_data = {
 -- Private stuff and things
 --------------------------------
 local function restore_prior_skills_system_v1(data)
+    -- See if the mod is installed
     if not haru_skills then
+        roguelite_manager.debug_write("Haruka Skill System not detected.")
         return
     end
 
-    haru_skills.skills_levels = data.skills_levels or haru_skills.skills_levels
-    haru_skills.skills_stats = data.skills_stats or haru_skills.skills_stats
-    haru_skills.skills_increments = data.skills_increments or haru_skills.skills_increments
+    --Check if we have data to restore
+    if not data.haru_skills_system or not data.haru_skills_system.skills_levels then
+        roguelite_manager.debug_write("No prior skill system data.")
+        return
+    end
+
+    haru_skills.skills_levels = data.haru_skills_system.skills_levels or haru_skills.skills_levels
+    haru_skills.skills_stats = data.haru_skills_system.skills_stats or haru_skills.skills_stats
+    haru_skills.skills_increments = data.haru_skills_system.skills_increments or haru_skills.skills_increments
+
+    for name,skill in pairs(haru_skills.skills_levels) do
+        local experience = skill.experience
+        local prev_requirement = skill.prev_requirement
+        local loss = experience * config.haru_skill_system_penalty_percent
+
+        local new_experience = experience - loss
+
+        if new_experience < prev_requirement then
+            new_experience = prev_requirement
+        end
+
+        roguelite_manager.debug_write("Updated skill "..name.." from "..experience.." to "..new_experience.." experience.")
+
+        skill.experienced = new_experience
+    end
 
     haru_skills.update_endurance()
     haru_skills.update_strength()
