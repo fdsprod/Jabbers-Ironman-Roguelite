@@ -61,3 +61,7 @@ Simply extract into your S.T.A.L.K.E.R. Anomaly installation folder.
 - 0.2 - [Update] Module API  
         [Fixed] Empty stashes on successive runs  
         [Fixed] Item uses would go to zero  
+- 0.3 - [Added] Character rank support
+        [Added] Haruka Skill System support as a proof of concept for external mod modules
+        [Cleanup] MCM Menu
+        [Cleanup] Debug Messages
