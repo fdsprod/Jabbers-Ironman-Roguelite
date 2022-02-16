@@ -62,6 +62,10 @@ end
 --------------------------------
 -- Game Callbacks
 --------------------------------
+
+--- Called from roguelite_manager to persist any mod specific 
+--- data that you want to load in the players next ironman run
+---@param save_data any
 function roguelite_save_state(save_data)
     if haru_skills then
         save_data.haru_skills_system_version = m_data.version
@@ -73,6 +77,9 @@ function roguelite_save_state(save_data)
     end
 end
 
+--- Called from roguelite_manager to load any mod specific data 
+--- saved after the player died in their previous Ironman run
+---@param save_data any
 function roguelite_load_state(save_data)
     if config.is_haru_skills_restore_enabled then
         if save_data.haru_skills_system_version == 1 then
@@ -81,6 +88,9 @@ function roguelite_load_state(save_data)
     end
 end
 
+--- Called from roguelite_manager to inject mcm options into the 
+--- Ironman Roguelite mcm options page.
+---@param gr any
 function append_mcm_options(gr)
     if not haru_skills then
         return 
@@ -103,6 +113,7 @@ function append_mcm_options(gr)
     })
 end
 
+--- Called from MCM when an option is changed.  
 function on_option_change()
     if not haru_skills then
         return 

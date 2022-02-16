@@ -46,6 +46,9 @@ Simply extract into your S.T.A.L.K.E.R. Anomaly installation folder.
 
 **Q**: How do I reset an Ironman playthrough so the stashes/rep/etc are not restored on my next playthrough  
 **A**: Simply delete the file in appdata pertaining to the faction you want to start over with.  Ex: appdata/roguelite_actor_bandit.state
+
+**Q**: I have a mod that I would like to persist information across Ironman playthroughs, how do I do that?  
+**A**: Please reference roguelite_module_haru_skills.script as an example of how to create a module and integrate your system with this one.  Your module's filename must be prefixed with "roguelite_module_" or it will not be loaded by roguelite_manager as a module.
     
 **Q**: I have an idea for progression that isnt included in this mod, how do I contact you.  
 **A**: Well, the easiest way would be discord.  You can join my personal discord (https://discord.gg/HRyCGesuXq) and message me direct. I can also be found live most days on Twitch (https://www.twitch.tv/jabbers_) so feel free to stop by and say Hi! Additionally you can leave me a message on moddb... although this isnt my preferred communication platform so my response may be slower.   
