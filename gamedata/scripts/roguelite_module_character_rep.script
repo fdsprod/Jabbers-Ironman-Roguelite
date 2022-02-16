@@ -1,0 +1,140 @@
+--[[
+	Jabbers
+	16FEB2022
+	Jabbers Ironman Roguelite
+--]]
+
+local config = {
+    -- Enables or Disables the restoration of character rep for new games
+    is_character_rep_restore_enabled = true,
+    -- Percentage loss of character rep when restored for new games
+    character_rep_penalty_percent = 0.02
+}
+
+local m_data = {
+    character_rep_version = 1,
+}
+
+--------------------------------
+-- Private stuff and things
+--------------------------------
+
+local function restore_prior_state_actor_rep_v1(data)
+    if not data.character_rep then
+        roguelite_manager.debug_write("No player reputation was recorded.")
+        return
+    end
+
+    local rept = data.character_rep
+    local loss = rept * config.character_rep_penalty_percent
+
+    rept = rept - loss
+
+    if rept < 0 then
+        rept = 0
+    end
+
+    if rept < game_statistics.actor_miscellaneous.actual_rep then
+        roguelite_manager.debug_write("Reputation "..tostring(rept).." not set for the player as it is below the starting rep of "..tostring(game_statistics.actor_miscellaneous.actual_rep)..".")
+        return
+    end
+
+    db.actor:set_character_reputation(rept)
+
+    game_statistics.actor_miscellaneous.actual_rep = rept
+end
+
+--------------------------------
+-- Game Callbacks
+--------------------------------
+
+function roguelite_load_state(save_data)
+    if config.is_character_rep_restore_enabled then
+        if save_data.character_rep_version == 1 then
+            restore_prior_state_actor_rep_v1(save_data)
+        end
+    end
+end
+
+function roguelite_save_state(save_data)
+    save_data.character_rep = game_statistics.actor_miscellaneous.actual_rep
+    save_data.character_rep_version = m_data.character_rep_version
+end
+
+function append_mcm_options(gr)
+    roguelite_manager.debug_write("Appending character rep module mcm options.")
+    --Charater Reputation Settings
+    table.insert(gr, { id = "line", type = "line" })
+    table.insert(gr, {
+        id = "desc_mcm",
+        type = "desc",
+        text = "ui_mcm_roguelite_character_rep_description",
+        clr = {255, 255 ,255 ,0},
+    })
+    table.insert(gr, { id = "line", type = "line" })
+    table.insert(gr, {
+        id = "is_character_rep_restore_enabled",
+        type = "check",
+        val = 1,
+        def = true
+    })
+    table.insert(gr, {
+        id = "character_rep_penalty_percent",
+        type = "track",
+        val = 2,
+        min = 0,
+        max = 1,
+        step = 0.02,
+        def = 0.02
+    })
+end
+
+function on_option_change()
+    local get_config = roguelite_manager_mcm.get_config
+
+    config.is_character_rep_restore_enabled = get_config("is_character_rep_restore_enabled")
+    config.character_rep_penalty_percent = get_config("character_rep_penalty_percent")
+
+    roguelite_manager.debug_write("is_character_rep_restore_enabled = "..tostring(config.is_character_rep_restore_enabled))
+    roguelite_manager.debug_write("character_rep_penalty_percent = "..tostring(config.character_rep_penalty_percent))
+end
+
+function on_game_load()
+    if ui_mcm then
+	    on_option_change()
+    end
+end
+
+function on_game_start()
+	RegisterScriptCallback("on_game_load", on_game_load)
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

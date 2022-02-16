@@ -23,34 +23,15 @@
                 -- on_roguelite_load_state(data) --<table> access to all prior Ironman session saved data
             - RegisterScriptCallback("on_roguelite_save_state", on_roguelite_save_state)
                 -- on_roguelite_load_state(data) --<table> store data that you want to read at the start of Ironman session
+            - RegisterScriptCallback("on_roguelite_mcm_load", on_roguelite_mcm_load)
+                -- on_roguelite_mcm_load(gr) --<table> "gr" table for the mcm menu.  Insert ui elements into gr direct via table.insert
 --]]
 
 local config = {
     -- Enables or Disables the entire roguelite experience
     is_roguelite_enabled = true,
     -- Allows log output for debugging
-    debug = true,
-    -- Enables or Disables the restoration of player stashes for new games
-    is_stash_restore_enabled = true,
-    -- Enables or Disables showing the stashes on the PDA for new games
-    show_stashes_on_pda = true,
-    -- Percentage loss of condition for each item in a player stash
-    stash_item_condition_loss_percent = 0.01,
-    -- Enables or Disables the restoration of trader rep for new games
-    is_trader_rep_restore_enabled = true,
-    -- Percentage loss of trader rep when restored for new games
-    trader_rep_penalty_percent = 0.02,
-    -- Enables or Disables the restoration of character rep for new games
-    is_character_rep_restore_enabled = true,
-    -- Percentage loss of character rep when restored for new games
-    character_rep_penalty_percent = 0.02
-}
-
-local m_data = {
-    version = 1,
-    stashes = {},
-    uses_data = {},
-    trader_rep = {}
+    debug = true
 }
 
 --------------------------------
@@ -94,7 +75,7 @@ local function print_table (tbl, indent)
     return toprint
 end
 
-local function debug_write(output)
+function debug_write(output)
     if config.debug then
         if (type(output) == "table") then
             utils_data.debug_write("Roguelite Manager: "..print_table(output))
@@ -107,100 +88,6 @@ end
 --------------------------------
 -- Private stuff and things
 --------------------------------
-
-local function restore_prior_state_stashes(data)
-    for _, item_data in pairs(data.stashes) do
-        if item_data then
-            local pos = vector():set(item_data.position.x, item_data.position.y, item_data.position.z)
-            local se_obj = alife_create("inv_backpack", pos, item_data.level_vertex_id, item_data.game_vertex_id)
-
-            if se_obj then
-                if config.show_stashes_on_pda then
-                    level.map_add_object_spot_ser(se_obj.id, "treasure_player", item_data.txt)
-                end
-
-                item_data.id = se_obj.id
-                m_data.stashes[item_data.id] = item_data
-
-                debug_write("Restored player stash " .. item_data.txt .. ".")
-            end
-        end
-    end
-end
-
-local function restore_prior_state_trader_rep(data)
-    local function update_character_rep(data, npc)
-        local rept = data.trader_rep[npc:character_name()]
-        local abs_rept = math.abs(rept)
-        local rept_loss = abs_rept * config.trader_rep_penalty_percent
-
-        rept = rept - rept_loss
-
-        if rept < -4000 then
-            rept = -4000
-        end
-
-        local ncp_rept = npc:character_reputation()
-
-        -- Only set the npc rept if it will not go below the new game value
-        if rept > ncp_rept then
-            debug_write("Updating repuation for trader "..npc:character_name().." to "..tostring(rept)..".")
-            npc:set_character_reputation(rept)
-        else
-            debug_write("Reputation "..tostring(rept).." not set for trader "..npc:character_name().." as it is below the starting rep of "..tostring(ncp_rept)..".")
-        end
-    end
-
-	for i=1, #db.OnlineStalkers do
-		local npc = db.storage[db.OnlineStalkers[i]]
-		npc = npc and npc.object or level.object_by_id(db.OnlineStalkers[i])
-		if (npc and IsStalker(npc) and npc:alive()) then
-			if utils_obj.is_trader(npc) then
-				if npc:relation(db.actor) ~= game_object.enemy then
-                    if data.trader_rep and data.trader_rep[npc:character_name()] then
-                        update_character_rep(data, npc)
-                    end
-				end
-			end
-		end
-	end
-
-    local function update_by_story_id(story_id)
-        local id = story_objects.object_id_by_story_id[story_id]
-        if id then
-            local npc = db.storage[id] and db.storage[id].object
-            if npc then
-                update_character_rep(data, npc)
-            end
-        end
-    end
-
-    update_by_story_id("esc_m_trader")
-    update_by_story_id("red_tech_forester")
-end
-
-local function restore_prior_state_actor_rep(data)
-    if not data.actor_miscellaneous.actual_rep then
-        debug_write("No player reputation was recorded.")
-        return
-    end
-    local rept = data.actor_miscellaneous.actual_rep
-    local loss = rept * config.character_rep_penalty_percent
-
-    rept = rept - loss
-
-    if rept < 0 then
-        rept = 0
-    end
-
-    if rept < game_statistics.actor_miscellaneous.actual_rep then
-        debug_write("Reputation "..tostring(rept).." not set for the player as it is below the starting rep of "..tostring(game_statistics.actor_miscellaneous.actual_rep)..".")
-        return
-    end
-
-    db.actor:set_character_reputation(rept)
-    game_statistics.actor_miscellaneous.actual_rep = rept
-end
 
 local function load_prior_state()
     local faction = alife():actor():community()
@@ -226,273 +113,15 @@ local function load_prior_state()
     end
 
     local data = marshal.decode(data)
+    local modules = get_modules()
 
-    if config.is_stash_restore_enabled then
-        restore_prior_state_stashes(data)
-    end
-    if config.is_trader_rep_restore_enabled then
-        restore_prior_state_trader_rep(data)
-    end
-    if config.is_character_rep_restore_enabled then
-        restore_prior_state_actor_rep(data)
-    end
-
-	SendScriptCallback("on_roguelite_load_state", data)
-end
-
-local function get_player_trader_rep()
-    local alife_state = alife_storage_manager.get_state()
-    local trader_rep = {}
-
-	for i=1, #db.OnlineStalkers do
-		local npc = db.storage[db.OnlineStalkers[i]]
-		npc = npc and npc.object or level.object_by_id(db.OnlineStalkers[i])
-		if (npc and IsStalker(npc) and npc:alive()) then
-			if utils_obj.is_trader(npc) then
-				if npc:relation(db.actor) ~= game_object.enemy then
-                    if (alife_state.actor_contacts and alife_state.actor_contacts[db.OnlineStalkers[i]]) then
-                        local rep = npc:character_reputation()
-                        debug_write("Storing trader "..npc:character_name().." with rep "..tostring(rep)..".")
-					    trader_rep[npc:character_name()] = rep
-                    end
-				end
-			end
-		end
-	end
-
-    local function add_by_story_id(story_id)
-        local id = story_objects.object_id_by_story_id[story_id]
-        if id then
-            local npc = db.storage[id] and db.storage[id].object
-            if npc then
-                local rep = npc:character_reputation()
-                debug_write("Storing trader "..npc:character_name().." with rep "..tostring(rep)..".")
-                trader_rep[npc:character_name()] = rep
-            end
+    debug_write("Module count "..tostring(#modules))
+    for name, module in pairs(modules) do
+        if module.roguelite_load_state then 
+            debug_write("Loading data "..name)
+            module.roguelite_load_state(data)
         end
     end
-
-    add_by_story_id("esc_m_trader")
-    add_by_story_id("red_tech_forester")
-
-    return trader_rep
-end
-
-local function compact(t)
-    for i = #t, 1, -1 do
-        if t[i] == nil then
-            table.remove(t, i)
-        end
-    end
-end
-
-local function degrade(name, condition)
-    if not condition then
-        return condition
-    end
-    local degrade_amount = condition * config.stash_item_condition_loss_percent
-    local new_condition = condition - degrade_amount
-    debug_write("Rogue Manager: Degrading "..name.." from "..condition.." to "..new_condition)
-    return new_condition
-end
-
-local function try_spawn_stash(box)
-    local stash = m_data.stashes[box:id()]
-
-    if not stash then
-        debug_write("No stash data found for " .. box:id() .. ".")
-        return
-    end
-
-    debug_write("Populating stash")
-
-    local se_box = alife_object(box:id())
-    local item_processor = itms_manager.get_item_processor()
-
-    item_processor.Debug = true
-
-    for _, item_data in pairs(stash.items) do
-        local section = item_data.section
-
-        debug_write("Creating item " .. section .. "...")
-
-        local se_obj = alife_create(section, se_box.position, se_box.m_level_vertex_id, se_box.m_game_vertex_id, se_box.id, false)
-
-        if se_obj then
-            debug_write("Created item " .. se_obj:name())
-
-            if IsWeapon(se_obj) then
-                debug_write("Creating weapon data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
-
-                local data = utils_stpk.get_weapon_data(se_obj)
-
-                data.ammo_current = item_data.ammo_current
-                data.ammo_elapsed = item_data.ammo_elapsed
-                data.weapon_state = item_data.weapon_state
-                data.addon_flags = item_data.addon_flags
-                data.ammo_type = item_data.ammo_type
-                data.condition = degrade(se_obj:name(), item_data.condition)
-                data.upgrades = item_data.upgrades
-                data.visual_name = item_data.visual_name
-                data.visual_flags = item_data.visual_flags
-                data.object_flags = item_data.object_flags
-                data.custom_data = item_data.custom_data
-
-                
-
-                utils_stpk.set_weapon_data(data, se_obj)
-            elseif IsAmmo(se_obj) then
-                debug_write("Creating ammo data for " .. se_obj:name() .. " " .. se_obj.id .. ".")
-
-                local data = utils_stpk.get_ammo_data(se_obj)
-
-                data.condition = degrade(se_obj:name(), item_data.condition)
-                data.upgrades = item_data.upgrades
-                data.visual_name = item_data.visual_name
-                data.visual_flags = item_data.visual_flags
-                data.object_flags = item_data.object_flags
-                data.custom_data = item_data.custom_data
-                data.ammo_left = item_data.ammo_left
-
-                utils_stpk.set_ammo_data(data, se_obj)
-            else
-                debug_write("Creating item data " .. se_obj:name() .. " " .. se_obj.id ..".")
-
-                local data = utils_stpk.get_item_data(se_obj)
-
-                data.condition = degrade(se_obj:name(), item_data.condition)
-                data.upgrades = item_data.upgrades
-                data.visual_name = item_data.visual_name
-                data.visual_flags = item_data.visual_flags
-                data.object_flags = item_data.object_flags
-                data.custom_data = item_data.custom_data
-
-                utils_stpk.set_item_data(data, se_obj)
-            end
-
-            alife():register(se_obj)
-
-            if item_data.uses and item_data.uses ~= 0 then
-                item_processor:Process_Item(nil, se_obj.id, {
-                    uses = item_data.uses
-                })
-            end
-        end
-    end
-
-    level.map_remove_object_spot(box:id(), "treasure")
-
-    item_processor:update()
-    m_data.stashes[box:id()] = nil
-end
-
-local function get_player_stashes()
-    local stash_data = {}
-    local sim = alife()
-
-    debug_write("Searching for player stashes")
-    -- First find all the stashes
-    for i = 1, 65534 do
-        local se_obj = sim:object(i)
-        if se_obj and se_obj:section_name() == "inv_backpack" and se_obj.parent_id ~= AC_ID then
-            debug_write("Found player stash " .. se_obj:name() .. " " .. se_obj.id .. ".")
-            local txt = strformat(game.translate_string("st_itm_stash_of_character"), db.actor:character_name())
-            local pos = se_obj.position
-
-            stash_data[se_obj.id] = {
-                id = se_obj.id,
-                position = {
-                    x = pos.x,
-                    y = pos.y,
-                    z = pos.z
-                },
-                level_vertex_id = se_obj.m_level_vertex_id,
-                game_vertex_id = se_obj.m_game_vertex_id,
-                txt = txt,
-                items = {}
-            }
-        end
-    end
-
-    if not next(stash_data) then
-        debug_write("No player stashes found.")
-        return stash_data
-    end
-
-    debug_write("Searching for items in player stashes")
-    -- Second iterate all items and find the ones with the parent_id of a found stash
-    for i = 1, 65534 do
-        local se_obj = sim:object(i)
-
-        if se_obj then
-            local stash = stash_data[se_obj.parent_id]
-
-            if stash then
-                debug_write("Found stash item " .. se_obj:name() .. " " .. se_obj.id ..".")
-
-                local section = se_obj:section_name()
-                local stash_item_data = {
-                    id = se_obj.id,
-                    name = se_obj:name(),
-                    section = section
-                }
-
-                if IsWeapon(se_obj) then
-                    debug_write("Gathering weapon data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
-                    local data = utils_stpk.get_weapon_data(se_obj)
-
-                    stash_item_data.ammo_current = data.ammo_current
-                    stash_item_data.ammo_elapsed = data.ammo_elapsed
-                    stash_item_data.weapon_state = data.weapon_state
-                    stash_item_data.addon_flags = data.addon_flags
-                    stash_item_data.ammo_type = data.ammo_type
-
-                    stash_item_data.condition = data.condition
-                    stash_item_data.upgrades = data.upgrades
-
-                    stash_item_data.visual_name = data.visual_name
-                    stash_item_data.visual_flags = data.visual_flags
-
-                    stash_item_data.object_flags = data.object_flags
-                    stash_item_data.custom_data = data.custom_data
-                elseif IsAmmo(se_obj) then
-                    debug_write("Gathering ammo data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
-                    local data = utils_stpk.get_ammo_data(se_obj)
-
-                    stash_item_data.condition = data.condition
-                    stash_item_data.upgrades = data.upgrades
-
-                    stash_item_data.visual_name = data.visual_name
-                    stash_item_data.visual_flags = data.visual_flags
-
-                    stash_item_data.object_flags = data.object_flags
-                    stash_item_data.custom_data = data.custom_data
-
-                    stash_item_data.ammo_left = data.ammo_left
-                else
-                    debug_write("Gathering item data " .. se_obj:name() .. " " ..se_obj.id .. ".")
-                    local data = utils_stpk.get_item_data(se_obj)
-
-                    stash_item_data.condition = data.condition
-                    stash_item_data.upgrades = data.upgrades
-
-                    stash_item_data.visual_name = data.visual_name
-                    stash_item_data.visual_flags = data.visual_flags
-
-                    stash_item_data.object_flags = data.object_flags
-                    stash_item_data.custom_data = data.custom_data
-
-                    if IsItem("multiuse", section) then
-                        stash_item_data.uses = m_data.uses_data[se_obj.id] or 0
-                    end
-                end
-
-                stash.items[se_obj.id] = stash_item_data
-            end
-        end
-    end
-
-    return stash_data
 end
 
 local function persist(save_data)
@@ -529,38 +158,6 @@ end
 -- Game Callbacks
 --------------------------------
 
-local function save_state(data)
-    if not IsHardcoreMode() then
-        debug_write("save_state not an ironman game mode.")
-        return
-    end
-
-    if not data.roguelite_manager then
-        data.roguelite_manager = {}
-    end
-
-    compact(m_data.stashes)
-    compact(m_data.uses_data)
-    compact(m_data.trader_rep)
-
-    data.roguelite_manager.data = m_data
-end
-
-local function load_state(data)
-    if not IsHardcoreMode() then
-        debug_write("load_state not an ironman game mode.")
-        return
-    end
-
-    if not data.roguelite_manager then
-        return
-    end
-
-    m_data = data.roguelite_manager.data or m_data
-
-    data.roguelite_manager.data = nil
-end
-
 local function actor_on_before_death(whoID, flags)
     if not config.is_roguelite_enabled then
         debug_write("actor_on_before_death roguelite disabled.")
@@ -576,15 +173,20 @@ local function actor_on_before_death(whoID, flags)
 
     local save_data = {}
 
-    save_data.stashes = get_player_stashes()
-    save_data.trader_rep = get_player_trader_rep()
-	save_data.actor_artefacts = game_statistics.actor_artefacts
-	save_data.actor_anomaly_maps = game_statistics.actor_anomaly_maps
-	save_data.actor_miscellaneous = game_statistics.actor_miscellaneous
-	save_data.actor_visited_levels = game_statistics.actor_visited_levels
-	save_data.actor_visited_smarts = game_statistics.actor_visited_smarts
-
-	SendScriptCallback("on_roguelite_save_data", save_data)
+    -- Reference for future modules
+	-- save_data.actor_artefacts = game_statistics.actor_artefacts
+	-- save_data.actor_anomaly_maps = game_statistics.actor_anomaly_maps
+	-- save_data.actor_miscellaneous = game_statistics.actor_miscellaneous
+	-- save_data.actor_visited_levels = game_statistics.actor_visited_levels
+	-- save_data.actor_visited_smarts = game_statistics.actor_visited_smarts
+    local modules = get_modules()
+    debug_write("Module count "..tostring(#modules))
+    for name, module in pairs(modules) do
+        if module.roguelite_save_state then 
+            debug_write("Loading data "..name)
+            module.roguelite_save_state(save_data)
+        end
+    end
 
     persist(save_data)
 end
@@ -597,90 +199,80 @@ local function actor_on_first_update()
 
     if IsHardcoreMode() then
         local data = alife_storage_manager.get_state()
-        if not data.roguelite_stash_spawn_complete then
+        if not data.roguelite_restore_complete then
             debug_write("Initializing stashes from prior Ironman games.")
             load_prior_state()
-            data.roguelite_stash_spawn_complete = true
+            data.roguelite_restore_complete = true
         end
     end
 end
 
-local function physic_object_on_use_callback(box, who)
-    if not config.is_roguelite_enabled then
-        debug_write("physic_object_on_use_callback roguelite disabled.")
-        return
+function get_modules()
+    local f	= getFS()
+    local flist = f:file_list_open_ex("$game_scripts$",bit_or(FS.FS_ListFiles,FS.FS_RootOnly),"roguelite_module_*.script")
+    local f_cnt = flist:Size()
+    local modules = {}
+
+    for	it=0, f_cnt-1 do
+        local file = flist:GetAt(it)
+        local file_name = file:NameShort()
+        if (file:Size() > 0) then
+            file_name = file_name:sub(0,file_name:len()-7)
+            if (_G[file_name]) then
+                debug_write("Found module "..file_name)
+                modules[file_name] = _G[file_name]
+            end
+        end
     end
 
-    if not IsHardcoreMode() then
-        debug_write("physic_object_on_use_callback not an ironman game mode.")
-        return
-    end
-
-    if box:section() == "inv_backpack" then
-        try_spawn_stash(box)
-    end
+    return modules
 end
 
-local function actor_on_item_put_in_box(box, item)
-    if not config.is_roguelite_enabled then
-        debug_write("actor_on_item_put_in_box roguelite disabled.")
-        return
-    end
-
-    if not IsHardcoreMode() then
-        debug_write("actor_on_item_put_in_box not an ironman game mode.")
-        return
-    end
-
-    if box:section() ~= "inv_backpack" then
-        return
-    end
-
-    -- I couldn't find a way to get access to "uses" when only having
-    -- access to server objects.   This is a hacky little work around.
-    if IsItem("multiuse", item:section()) then
-        local uses = utils_item.get_item_remaining_uses(item) or 0
-        m_data.uses_data[item:id()] = uses
-    end
+function is_enabled()
+    return config.is_roguelite_enabled
 end
 
+function compact_table(t)
+    for i = #t, 1, -1 do
+        if t[i] == nil then
+            table.remove(t, i)
+        end
+    end
+end
 
 function on_option_change()
-    debug_write("MCM Options Changed")
-
     local get_config = roguelite_manager_mcm.get_config
 
     config.is_roguelite_enabled = get_config("is_roguelite_enabled")
     config.debug = get_config("debug")
-    config.is_stash_restore_enabled = get_config("is_stash_restore_enabled")
-    config.show_stashes_on_pda = get_config("show_stashes_on_pda")
-    config.stash_item_condition_loss_percent = get_config("stash_item_condition_loss_percent")
-    config.is_trader_rep_restore_enabled = get_config("is_trader_rep_restore_enabled")
-    config.trader_rep_penalty_percent = get_config("trader_rep_penalty_percent")
-    config.is_character_rep_restore_enabled = get_config("is_character_rep_restore_enabled")
-    config.character_rep_penalty_percent = get_config("character_rep_penalty_percent")
-    
+
     debug_write("is_roguelite_enabled = "..tostring(config.is_roguelite_enabled))
     debug_write("debug = "..tostring(config.debug))
-    debug_write("is_stash_restore_enabled = "..tostring(config.is_stash_restore_enabled))
-    debug_write("show_stashes_on_pda = "..tostring(config.show_stashes_on_pda))
-    debug_write("stash_item_condition_loss_percent = "..tostring(config.stash_item_condition_loss_percent))
-    debug_write("is_trader_rep_restore_enabled = "..tostring(config.is_trader_rep_restore_enabled))
-    debug_write("trader_rep_penalty_percent = "..tostring(config.trader_rep_penalty_percent))
-    debug_write("is_character_rep_restore_enabled = "..tostring(config.is_character_rep_restore_enabled))
-    debug_write("character_rep_penalty_percent = "..tostring(config.character_rep_penalty_percent))
+end
+
+function on_game_load()
+    if ui_mcm then
+	    on_option_change()
+    end
 end
 
 function on_game_start()
-    RegisterScriptCallback("actor_on_item_put_in_box",actor_on_item_put_in_box)
-    RegisterScriptCallback("save_state", save_state)
-    RegisterScriptCallback("load_state", load_state)
+	RegisterScriptCallback("on_game_load",on_game_load)
     RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
     RegisterScriptCallback("actor_on_before_death", actor_on_before_death)
-    RegisterScriptCallback("physic_object_on_use_callback", physic_object_on_use_callback)
-
-    debug_write("Registered")
 end
+
+local function main_menu_on_init()
+    debug_write("Core Registered")
+    debug_write("Initializing modules.")
+
+    if ui_mcm then
+        --Reload to apply module options
+        ui_mcm.reload()
+    end
+end
+
+RegisterScriptCallback("main_menu_on_init", main_menu_on_init)
 
 
 
