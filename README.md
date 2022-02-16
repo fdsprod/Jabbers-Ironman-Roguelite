@@ -28,9 +28,9 @@ A subgenre of roguelikes that has most of the game design philosophies of roguel
 - Restore character rep with optional penalty loss between Ironman playthroughs
  - Character rep will never go below the value the character receives at the start of a new game
 - All Stashes/Items/Rep are saved based on faction so that seperate Ironman playthroughs of each faction do not interfere with each other.  IE: Stashes created on a Loner playthrough will not be seen on a Military playthrough and vice versa.
-- Ability for other mods to save data to be used in concurent playthroughs
+- Ability for other mods to create modules for saving and restoring data to be used in concurrent playthroughs
  - Create a script called "roguelite_module_<your module name>.script" 
- - Implemente the following global functions in your script
+ - Implement the following global functions in your script
   - roguelite_load_state(data) - Loads data from the prior playthrough
   - roguelite_save_state(data) - Saves data when the player dies
   - append_mcm_options(gr) - Append any MCM options you want under the "Ironman Roguelite" MCM category
