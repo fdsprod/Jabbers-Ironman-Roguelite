@@ -231,14 +231,6 @@ function is_enabled()
     return config.is_roguelite_enabled
 end
 
-function compact_table(t)
-    for i = #t, 1, -1 do
-        if t[i] == nil then
-            table.remove(t, i)
-        end
-    end
-end
-
 function on_option_change()
     local get_config = roguelite_manager_mcm.get_config
 

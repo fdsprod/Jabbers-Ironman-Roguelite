@@ -33,6 +33,12 @@ local function degrade(name, condition)
     return new_condition
 end
 
+local function tablelength(T)
+    local count = 0
+    for _ in pairs(T) do count = count + 1 end
+    return count
+end
+
 local function restore_prior_state_stashes_v1(data)
     for _, stash_data in pairs(data.stashes) do
         if stash_data then
@@ -48,6 +54,8 @@ local function restore_prior_state_stashes_v1(data)
                 m_data.stashes[stash_data.id] = stash_data
 
                 for _, item_data in pairs(stash_data.items) do
+                    local class = ini_sys:r_string_ex(item_data.section,"class") or nil
+                    roguelite_manager.debug_write("Condition check for item clsid:"..item_data.clsid.." class:"..class.." section:"..item_data.section)
                     if (IsWeapon(nil, item_data.clsid) and (item_data.section ~= "wpn_binoc_inv")) or
                         IsOutfit(nil, item_data.clsid) or
                         IsHeadgear(nil, item_data.clsid) or
@@ -56,13 +64,15 @@ local function restore_prior_state_stashes_v1(data)
                     end
                 end
 
-                roguelite_manager.debug_write("Restored player stash " .. stash_data.txt .. " with "..tostring(#stash_data.items).." items.")
+                roguelite_manager.debug_write("Restored player stash "..stash_data.id.." ".. stash_data.txt .. " with "..tablelength(stash_data.items).." items.")
             end
         end
     end
 end
 
 local function try_spawn_stash(box)
+    roguelite_manager.debug_write("Trying to populate player stash")
+
     local stash = m_data.stashes[box:id()]
 
     if not stash then
@@ -163,13 +173,13 @@ local function get_player_stashes()
         local se_obj = sim:object(i)
         if se_obj and se_obj:section_name() == "inv_backpack" and se_obj.parent_id ~= AC_ID then
             roguelite_manager.debug_write("Found player stash " .. se_obj:name() .. " " .. se_obj.id .. ".")
+
             local txt = strformat(game.translate_string("st_itm_stash_of_character"), db.actor:character_name())
             local pos = se_obj.position
-            local clsid = se_obj:clsid()
 
             stash_data[se_obj.id] = {
                 id = se_obj.id,
-                clsid = clsid,
+                section = se_obj:section_name(),
                 position = {
                     x = pos.x,
                     y = pos.y,
@@ -210,6 +220,7 @@ local function get_player_stashes()
                 local stash_item_data = {
                     id = se_obj.id,
                     name = se_obj:name(),
+                    clsid = get_clsid(se_obj),
                     section = section
                 }
 
@@ -279,12 +290,11 @@ local function save_state(data)
         return
     end
 
+    roguelite_manager.debug_write("Saving stash data.")
+
     if not data.roguelite_manager then
         data.roguelite_manager = {}
     end
-
-    roguelite_manager.compact_table(m_data.stashes)
-    roguelite_manager.compact_table(m_data.item_uses_data)
 
     data.roguelite_manager.stashes_version = m_data.stashes_version
     data.roguelite_manager.stashes = m_data.stashes
@@ -303,14 +313,24 @@ local function load_state(data)
     local stashes_version = data.roguelite_manager.stashes_version
 
     if stashes_version == 1 then
-        m_data.stashes = data.roguelite_manager.stashes or m_data.stashes
-        m_data.stashes = data.roguelite_manager.item_uses_data or m_data.item_uses_data
+        if  data.roguelite_manager.stashes then
+            roguelite_manager.debug_write("Restoring stash data from prior save.")
+            m_data.stashes = data.roguelite_manager.stashes
+        end
+        if  data.roguelite_manager.stashes then
+            roguelite_manager.debug_write("Restoring item use data from prior save.")
+            m_data.item_uses_data = data.roguelite_manager.item_uses_data or m_data.item_uses_data
+        end
     end
 
-    data.roguelite_manager.data = nil
+    data.roguelite_manager.stashes_version = nil
+    data.roguelite_manager.stashes = nil
+    data.roguelite_manager.item_uses_data = nil
 end
 
 local function physic_object_on_use_callback(box, who)
+    roguelite_manager.debug_write(who:name().." interacted with "..box:name())
+
     if not roguelite_manager.is_enabled() then
         roguelite_manager.debug_write("physic_object_on_use_callback roguelite disabled.")
         return
@@ -419,6 +439,8 @@ function on_game_start()
     RegisterScriptCallback("load_state", load_state)
     RegisterScriptCallback("actor_on_item_put_in_box",actor_on_item_put_in_box)
     RegisterScriptCallback("physic_object_on_use_callback", physic_object_on_use_callback)
+
+    roguelite_manager.debug_write("Stash module callbacks registered")
 end
 
 
