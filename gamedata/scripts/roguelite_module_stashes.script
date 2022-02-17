@@ -329,7 +329,11 @@ local function load_state(data)
 end
 
 local function physic_object_on_use_callback(box, who)
-    roguelite_manager.debug_write(who:name().." interacted with "..box:name())
+    if who then
+        roguelite_manager.debug_write(who:name().." interacted with "..box:name())
+    else
+        roguelite_manager.debug_write(box:name().." was  interacted with.")
+    end
 
     if not roguelite_manager.is_enabled() then
         roguelite_manager.debug_write("physic_object_on_use_callback roguelite disabled.")
