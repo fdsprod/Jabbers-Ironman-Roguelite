@@ -4,10 +4,10 @@
 
     <!--Trader Reputation Settings-->
     <string id="ui_mcm_roguelite_haru_skills_description">
-        <text>Haru РЎС‚РѕР№РєРѕСЃС‚СЊ СЃРёСЃС‚РµРјС‹ РЅР°РІС‹РєРѕРІ</text>
+        <text>Сохранение системы навыков Хару</text>
     </string>
     <string id="ui_mcm_roguelite_is_haru_skills_restore_enabled">
-        <text>Р’РєР»СЋС‡РµРЅРѕ</text>
+        <text>Включено</text>
     </string>
     
 </string_table>

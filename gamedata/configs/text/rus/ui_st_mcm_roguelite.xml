@@ -2,56 +2,56 @@
 
 <string_table>
 	<string id="ui_mcm_menu_roguelite">
-		<text>Р–РµР»РµР·РЅС‹Р№ Р§РµР»РѕРІРµРє РЈРїСЂРѕС‰С‘РЅРЅС‹Р№ СЂРѕРіР°Р»РёРє</text>
+		<text>Ironman Roguelite</text>
 	</string>
 
     <!--Global Settings-->
     <string id="ui_mcm_roguelite_title">
-        <text>Jabbers' Р–РµР»РµР·РЅС‹Р№ Р§РµР»РѕРІРµРє РЈРїСЂРѕС‰С‘РЅРЅС‹Р№ СЂРѕРіР°Р»РёРє РќР°СЃС‚СЂРѕР№РєРё</text>
+        <text>Jabbers' Ironman Roguelite Settings</text>
     </string>
     <string id="ui_mcm_roguelite_is_roguelite_enabled">
-        <text>Р’РєР»СЋС‡РµРЅРѕ</text>
+        <text>Включено</text>
     </string>
     <string id="ui_mcm_roguelite_debug">
-        <text>РћС‚Р»Р°Р¶РёРІР°С‚СЊ</text>
+        <text>Дебаг журнал</text>
     </string>
 
     <!--Player Stash Settings-->
     <string id="ui_mcm_roguelite_stashes_description">
-        <text>РЎРѕС…СЂР°РЅРµРЅРёРµ С‚Р°Р№РЅРёРєРѕРІ РёРіСЂРѕРєР°</text>
+        <text>Сохранение тайников игрока</text>
     </string>
     <string id="ui_mcm_roguelite_is_stash_restore_enabled">
-        <text>Р’РєР»СЋС‡РµРЅРѕ</text>
+        <text>Включено</text>
     </string>
     <string id="ui_mcm_roguelite_show_stashes_on_pda">
-        <text>РџРѕРєР°Р·С‹РІР°С‚СЊ РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРЅС‹Рµ С‚Р°Р№РЅРёРєРё РёРіСЂРѕРєРѕРІ РЅР° РљРџРљ</text>
+        <text>Показывать восстановленные тайники игроков на КПК</text>
     </string>
     <string id="ui_mcm_roguelite_stash_item_condition_loss_percent">
-        <text>% СѓС…СѓРґС€РµРЅРёСЏ СЃРѕСЃС‚РѕСЏРЅРёСЏ РїСЂРµРґРјРµС‚Р° РјРµР¶РґСѓ РїСЂРѕС…РѕР¶РґРµРЅРёСЏРјРё</text>
+        <text>% ухудшения состояния предмета между прохождениями</text>
     </string>
 
     <!--Trader Reputation Settings-->
     <string id="ui_mcm_roguelite_trader_rep_description">
-        <text>РџРѕСЃС‚РѕСЏРЅСЃС‚РІРѕ СЂРµРїСѓС‚Р°С†РёРё С‚СЂРµР№РґРµСЂР°</text>
+        <text>Постоянство репутации трейдера</text>
     </string>
     <string id="ui_mcm_roguelite_is_trader_rep_restore_enabled">
-        <text>Р’РєР»СЋС‡РµРЅРѕ</text>
+        <text>Включено</text>
     </string>
     <string id="ui_mcm_roguelite_trader_rep_penalty_percent">
-        <text>% РїРѕС‚РµСЂРё СЂРµРїСѓС‚Р°С†РёРё С‚СЂРµР№РґРµСЂР° РјРµР¶РґСѓ РїСЂРѕС…РѕР¶РґРµРЅРёСЏРјРё</text>
+        <text>% потери репутации трейдера между прохождениями</text>
     </string>
 
     <!--Charater Reputation Settings-->
     <string id="ui_mcm_roguelite_character_rep_description">
-        <text>РЎС‚РѕР№РєРѕСЃС‚СЊ СЂРµРїСѓС‚Р°С†РёРё РїРµСЂСЃРѕРЅР°Р¶Р°</text>
+        <text>Стойкость репутации персонажа</text>
     </string>
     <string id="ui_mcm_roguelite_is_character_rep_restore_enabled">
-        <text>Р’РєР»СЋС‡РµРЅРѕ</text>
+        <text>Включено</text>
     </string>
     <string id="ui_mcm_roguelite_character_rep_penalty_percent">
-        <text>РџРµСЂСЃРѕРЅР°Р¶ РјРµР¶РґСѓ РїРѕС‚РµСЂСЏРјРё % РјРµР¶РґСѓ РїСЂРѕС…РѕР¶РґРµРЅРёСЏРјРё</text>
+        <text>% потери репутации персонажа между прохождениями</text>
     </string>
     <string id="ui_mcm_roguelite_character_rank_penalty_percent">
-        <text>% РїРѕС‚РµСЂРё СЂР°РЅРіР° РїРµСЂСЃРѕРЅР°Р¶Р° РјРµР¶РґСѓ РїСЂРѕС…РѕР¶РґРµРЅРёСЏРјРё</text>
+        <text>% потери ранга персонажа между прохождениями</text>
     </string>
 </string_table>

@@ -22,6 +22,11 @@ local m_data = {
 
 local function update_character_rep(data, npc)
     local rept = data.trader_rep[npc:character_name()]
+
+    if not rept then
+        return
+    end
+
     local abs_rept = math.abs(rept)
     local rept_loss = abs_rept * config.trader_rep_penalty_percent
 

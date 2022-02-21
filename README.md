@@ -57,14 +57,3 @@ Simply extract into your S.T.A.L.K.E.R. Anomaly installation folder.
 
 - Implement some sort of Achievement based character progression system.  Example: Finishing the questline "Living Ledgend" might give the player a permanent bonus to carry weight.  This bonus would be applied on all successive Ironman playthroughs.  
 - Restore learned recipes
-
-**CHANGELOG**
-
-- 0.1 - Initial Beta Release  
-- 0.2 - [Update] Module API  
-        [Fixed] Empty stashes on successive runs  
-        [Fixed] Item uses would go to zero  
-- 0.3 - [Added] Character rank support  
-        [Added] Haruka Skill System support as a proof of concept for external mod modules  
-        [Cleanup] MCM Menu  
-        [Cleanup] Debug Messages  
