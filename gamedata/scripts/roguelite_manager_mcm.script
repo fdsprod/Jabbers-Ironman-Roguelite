@@ -22,7 +22,7 @@ function on_mcm_load()
                 id = "debug",
                 type = "check",
                 val = 1,
-                def = true
+                def = false
             },
         }
     }

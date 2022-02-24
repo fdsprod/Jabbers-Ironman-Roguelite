@@ -90,11 +90,13 @@ end
 --------------------------------
 
 local function load_prior_state()
-    local faction = alife():actor():community()
+    local faction = character_community(db.actor):sub(7)
 
     if not faction then
         debug_write("Error finding player faction")
     end
+
+    debug_write("Loading prior state for faction: "..faction)
 
     local file_path = "appdata\\roguelite_"..faction..".state"
     local file = io.open(file_path, "rb")
@@ -103,6 +105,8 @@ local function load_prior_state()
         return
     end
 
+    debug_write("Loading prior state from: "..file_path)
+    
     local data = file:read("*all")
 
     file:close()
@@ -126,11 +130,13 @@ end
 local function persist(save_data)
     debug_write(save_data)
 
-    local faction = alife():actor():community()
+    local faction = character_community(db.actor):sub(7)
 
     if not faction then
         debug_write("Error finding player faction")
     end
+
+    debug_write("Saving state for faction: "..faction)
 
     local data = marshal.encode(save_data)
 
@@ -141,6 +147,8 @@ local function persist(save_data)
 
     local file_path = "appdata\\roguelite_"..faction..".state"
     local file = io.open(file_path, "wb")
+
+    debug_write("Saving prior state to: "..file_path)
 
     if not (io.type(file) == "file") then
         debug_write("Error unable to write to " .. file_path)

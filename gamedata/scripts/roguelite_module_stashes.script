@@ -55,12 +55,14 @@ local function restore_prior_state_stashes_v1(data)
 
                 for _, item_data in pairs(stash_data.items) do
                     local class = ini_sys:r_string_ex(item_data.section,"class") or nil
-                    roguelite_manager.debug_write("Condition check for item clsid:"..item_data.clsid.." class:"..class.." section:"..item_data.section)
-                    if (IsWeapon(nil, item_data.clsid) and (item_data.section ~= "wpn_binoc_inv")) or
-                        IsOutfit(nil, item_data.clsid) or
-                        IsHeadgear(nil, item_data.clsid) or
-                        IsItem("device", item_data.section) then
-                        item_data.condition = degrade(item_data.section, item_data.condition)
+                    if class then 
+                        roguelite_manager.debug_write("Condition check for item clsid:"..item_data.clsid.." class:"..class.." section:"..item_data.section)
+                        if (IsWeapon(nil, item_data.clsid) and (item_data.section ~= "wpn_binoc_inv")) or
+                            IsOutfit(nil, item_data.clsid) or
+                            IsHeadgear(nil, item_data.clsid) or
+                            IsItem("device", item_data.section) then
+                            item_data.condition = degrade(item_data.section, item_data.condition)
+                        end
                     end
                 end
 
