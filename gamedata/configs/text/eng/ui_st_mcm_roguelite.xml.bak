@@ -21,15 +21,9 @@
     <string id="ui_mcm_roguelite_is_stash_restore_enabled">
         <text>Enabled</text>
     </string>
-    <string id="ui_mcm_roguelite_is_money_restore_enabled">
-        <text>Enabled</text>
-    </string>
     <string id="ui_mcm_roguelite_show_stashes_on_pda">
         <text>Show restored player stashes on your PDA</text>
     </string>
-    <!-- <string id="ui_mcm_roguelite_is_stash_drop_player_inventory_on_death_enabled">
-        <text>Drop player inventory on death</text>
-    </string> -->
     <string id="ui_mcm_roguelite_stash_item_condition_loss_percent">
         <text>Item condition degredation % between playthroughs</text>
     </string>

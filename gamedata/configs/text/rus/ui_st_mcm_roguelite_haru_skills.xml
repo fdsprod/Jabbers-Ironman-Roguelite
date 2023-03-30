@@ -4,10 +4,13 @@
 
     <!--Trader Reputation Settings-->
     <string id="ui_mcm_roguelite_haru_skills_description">
-        <text>Сохранение системы навыков Хару</text>
+        <text>пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ</text>
     </string>
     <string id="ui_mcm_roguelite_is_haru_skills_restore_enabled">
-        <text>Включено</text>
+        <text>пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ</text>
+    </string>
+    <string id="ui_mcm_roguelite_haru_skill_system_penalty_percent">
+        <text>Skill loss % between playthroughs</text>
     </string>
     
 </string_table>

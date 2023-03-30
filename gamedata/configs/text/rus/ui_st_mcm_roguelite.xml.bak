@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="windows-1251"?>
+
 <string_table>
 	<string id="ui_mcm_menu_roguelite">
 		<text>Ironman Roguelite</text>
@@ -8,54 +10,48 @@
         <text>Jabbers' Ironman Roguelite Settings</text>
     </string>
     <string id="ui_mcm_roguelite_is_roguelite_enabled">
-        <text>Enabled</text>
+        <text>Включено</text>
     </string>
     <string id="ui_mcm_roguelite_debug">
-        <text>Debug</text>
+        <text>Дебаг журнал</text>
     </string>
 
     <!--Player Stash Settings-->
     <string id="ui_mcm_roguelite_stashes_description">
-        <text>Player Stashes Persistence</text>
+        <text>Сохранение тайников игрока</text>
     </string>
     <string id="ui_mcm_roguelite_is_stash_restore_enabled">
-        <text>Enabled</text>
-    </string>
-    <string id="ui_mcm_roguelite_is_money_restore_enabled">
-        <text>Enabled</text>
+        <text>Включено</text>
     </string>
     <string id="ui_mcm_roguelite_show_stashes_on_pda">
-        <text>Show restored player stashes on your PDA</text>
+        <text>Показывать восстановленные тайники игроков на КПК</text>
     </string>
-    <!-- <string id="ui_mcm_roguelite_is_stash_drop_player_inventory_on_death_enabled">
-        <text>Drop player inventory on death</text>
-    </string> -->
     <string id="ui_mcm_roguelite_stash_item_condition_loss_percent">
-        <text>Item condition degredation % between playthroughs</text>
+        <text>% ухудшения состояния предмета между прохождениями</text>
     </string>
 
     <!--Trader Reputation Settings-->
     <string id="ui_mcm_roguelite_trader_rep_description">
-        <text>Trader Reputation Persistence</text>
+        <text>Постоянство репутации трейдера</text>
     </string>
     <string id="ui_mcm_roguelite_is_trader_rep_restore_enabled">
-        <text>Enabled</text>
+        <text>Включено</text>
     </string>
     <string id="ui_mcm_roguelite_trader_rep_penalty_percent">
-        <text>Trader repuation loss % between playthroughs</text>
+        <text>% потери репутации трейдера между прохождениями</text>
     </string>
 
     <!--Charater Reputation Settings-->
     <string id="ui_mcm_roguelite_character_rep_description">
-        <text>Charater Reputation Persistence</text>
+        <text>Стойкость репутации персонажа</text>
     </string>
     <string id="ui_mcm_roguelite_is_character_rep_restore_enabled">
-        <text>Enabled</text>
+        <text>Включено</text>
     </string>
     <string id="ui_mcm_roguelite_character_rep_penalty_percent">
-        <text>Character repuation loss % between playthroughs</text>
+        <text>% потери репутации персонажа между прохождениями</text>
     </string>
     <string id="ui_mcm_roguelite_character_rank_penalty_percent">
-        <text>Character rank loss % between playthroughs</text>
+        <text>% потери ранга персонажа между прохождениями</text>
     </string>
 </string_table>

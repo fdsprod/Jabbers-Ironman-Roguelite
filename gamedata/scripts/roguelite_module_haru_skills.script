@@ -111,6 +111,15 @@ function append_mcm_options(gr)
         val = 1,
         def = false
     })
+    table.insert(gr, {
+        id = "haru_skill_system_penalty_percent",
+        type = "track",
+        val = 2,
+        min = 0,
+        max = 1,
+        step = 0.01,
+        def = 0.02
+    })
 end
 
 --- Called from MCM when an option is changed.  
@@ -122,10 +131,10 @@ function on_option_change()
     local get_config = roguelite_manager_mcm.get_config
 
     config.is_haru_skills_restore_enabled = get_config("is_haru_skills_restore_enabled")
-    config.haru_skill_experience_penalty_percent = get_config("haru_skill_experience_penalty_percent")
+    config.haru_skill_system_penalty_percent = get_config("haru_skill_system_penalty_percent") or 0.02
 
     roguelite_manager.debug_write("is_haru_skills_restore_enabled = "..tostring(config.is_haru_skills_restore_enabled))
-    roguelite_manager.debug_write("haru_skill_experience_penalty_percent = "..tostring(config.haru_skill_experience_penalty_percent))
+    roguelite_manager.debug_write("haru_skill_system_penalty_percent = "..tostring(config.haru_skill_system_penalty_percent))
 end
 
 function on_game_load()
