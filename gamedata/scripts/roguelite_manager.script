@@ -253,65 +253,71 @@ function restore_item(section, position, level_vertex_id, game_vertex_id, item_d
     if se_obj then    
         debug_write("Created item " .. se_obj:name())
 
-        local item_processor = itms_manager.get_item_processor()
+        if item_data then
+            local item_processor = itms_manager.get_item_processor()
 
-        if IsWeapon(se_obj) then
-            debug_write("Creating weapon data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
+            if IsWeapon(se_obj) then
+                debug_write("Creating weapon data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
 
-            local data = utils_stpk.get_weapon_data(se_obj)
+                local data = utils_stpk.get_weapon_data(se_obj)
 
-            data.ammo_current = item_data.ammo_current
-            data.ammo_elapsed = item_data.ammo_elapsed
-            data.weapon_state = item_data.weapon_state
-            data.addon_flags = item_data.addon_flags
-            data.ammo_type = item_data.ammo_type
-            data.condition = item_data.condition
-            data.upgrades = item_data.upgrades
-            data.visual_name = item_data.visual_name
-            data.visual_flags = item_data.visual_flags
-            data.object_flags = item_data.object_flags
-            data.custom_data = item_data.custom_data
+                data.ammo_current = item_data.ammo_current
+                data.ammo_elapsed = item_data.ammo_elapsed
+                data.weapon_state = item_data.weapon_state
+                data.addon_flags = item_data.addon_flags
+                data.ammo_type = item_data.ammo_type
+                data.condition = item_data.condition
+                data.upgrades = item_data.upgrades
+                data.visual_name = item_data.visual_name
+                data.visual_flags = item_data.visual_flags
+                data.object_flags = item_data.object_flags
+                data.custom_data = item_data.custom_data
 
-            utils_stpk.set_weapon_data(data, se_obj)
-        elseif IsAmmo(se_obj) then
-            debug_write("Creating ammo data for " .. se_obj:name() .. " " .. se_obj.id .. ".")
+                utils_stpk.set_weapon_data(data, se_obj)
+            elseif IsAmmo(se_obj) then
+                debug_write("Creating ammo data for " .. se_obj:name() .. " " .. se_obj.id .. ".")
 
-            local data = utils_stpk.get_ammo_data(se_obj)
+                local data = utils_stpk.get_ammo_data(se_obj)
 
-            data.condition = item_data.condition
-            data.upgrades = item_data.upgrades
-            data.visual_name = item_data.visual_name
-            data.visual_flags = item_data.visual_flags
-            data.object_flags = item_data.object_flags
-            data.custom_data = item_data.custom_data
-            data.ammo_left = item_data.ammo_left
+                data.condition = item_data.condition
+                data.upgrades = item_data.upgrades
+                data.visual_name = item_data.visual_name
+                data.visual_flags = item_data.visual_flags
+                data.object_flags = item_data.object_flags
+                data.custom_data = item_data.custom_data
+                data.ammo_left = item_data.ammo_left
 
-            utils_stpk.set_ammo_data(data, se_obj)
-        else
-            roguelite_manager.debug_write("Creating item data " .. se_obj:name() .. " " .. se_obj.id ..".")
+                utils_stpk.set_ammo_data(data, se_obj)
+            else
+                roguelite_manager.debug_write("Creating item data " .. se_obj:name() .. " " .. se_obj.id ..".")
 
-            local data = utils_stpk.get_item_data(se_obj)
+                local data = utils_stpk.get_item_data(se_obj)
 
-            data.condition = item_data.condition
-            data.upgrades = item_data.upgrades
-            data.visual_name = item_data.visual_name
-            data.visual_flags = item_data.visual_flags
-            data.object_flags = item_data.object_flags
-            data.custom_data = item_data.custom_data
+                data.condition = item_data.condition
+                data.upgrades = item_data.upgrades
+                data.visual_name = item_data.visual_name
+                data.visual_flags = item_data.visual_flags
+                data.object_flags = item_data.object_flags
+                data.custom_data = item_data.custom_data
 
-            utils_stpk.set_item_data(data, se_obj)
-        end
+                utils_stpk.set_item_data(data, se_obj)
+            end
 
-        alife():register(se_obj)
+            alife():register(se_obj)
 
-        if item_data.uses and item_data.uses ~= 0 then
-            roguelite_manager.debug_write("Updating item uses " .. se_obj:name() .. " " .. item_data.uses ..".")
+            if item_data.uses and item_data.uses ~= 0 then
+                roguelite_manager.debug_write("Updating item uses " .. se_obj:name() .. " " .. item_data.uses ..".")
 
-            item_processor:Process_Item(nil, se_obj.id, {
-                uses = item_data.uses
-            })
+                item_processor:Process_Item(nil, se_obj.id, {
+                    uses = item_data.uses
+                })
+            end
+        else 
+            alife():register(se_obj)
         end
     end
+
+    return se_obj
 end
 
 --------------------------------
@@ -425,14 +431,6 @@ local function main_menu_on_init()
 end
 
 RegisterScriptCallback("main_menu_on_init", main_menu_on_init)
-
-
-
-
-
-
-
-
 
 
 

@@ -1,0 +1,154 @@
+--[[
+	Jabbers
+	30MAR2023
+	Jabbers Ironman Roguelite - Furniture Module
+--]]
+
+local config = {
+    is_placeables_restore_enabled = true,
+}
+
+local placeable_objects_section_names = {
+    "placeable_metal_torch",
+    "placeable_gas_lamp",
+    "placeable_gas_lamp_gamma",
+    "placeable_light_altar",
+    "placeable_radio",
+    "placeable_piano",
+}
+
+local m_data = {
+    placeables_version = 1,
+    placeables = {}
+}
+
+--------------------------------
+-- Private stuff and things
+--------------------------------
+
+local function tablelength(T)
+    local count = 0
+    for _ in pairs(T) do count = count + 1 end
+    return count
+end
+
+local function restore_prior_state_placeables_v1(data)
+    for _, placeable_data in pairs(data.placeables) do
+        if placeable_data then
+            roguelite_manager.debug_write("Restoring placeable...")
+
+            local pos = vector():set(placeable_data.position.x, placeable_data.position.y, placeable_data.position.z)
+            local se_obj = alife_create(placeable_data.section, pos, placeable_data.level_vertex_id, placeable_data.game_vertex_id)
+            
+            if se_obj then
+                se_obj.angle = vector():set(placeable_data.angle.x, placeable_data.angle.y, placeable_data.angle.z)
+
+                roguelite_manager.debug_write("Restored placeable "..placeable_data.id.." ".. placeable_data.section)
+            end
+        else 
+            roguelite_manager.debug_write("Not expected.")
+        end
+    end
+end
+
+local function table_has_value (tab, val)
+    for index, value in ipairs(tab) do
+        if value == val then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function get_player_placeables()
+    local placeable_data = {}
+    local sim = alife()
+
+    roguelite_manager.debug_write("Searching for player placesables")
+
+    -- First find all the placesables
+    for i = 1, 65534 do
+        local se_obj = sim:object(i)
+        if se_obj then
+            local section_name = se_obj:section_name()
+            if table_has_value(placeable_objects_section_names, section_name) and se_obj.parent_id ~= AC_ID then
+                roguelite_manager.debug_write("Found placeable " .. se_obj:name() .. " " .. se_obj.id .. ".")
+                local ser_obj = roguelite_manager.serialize_se_obj(se_obj)
+                placeable_data[se_obj.id] = ser_obj   
+            end
+        end
+    end
+
+    return placeable_data
+end
+
+--------------------------------
+-- Game Callbacks
+--------------------------------
+local function save_state(data)
+    if not IsHardcoreMode() then
+        return
+    end
+
+    roguelite_manager.debug_write("Saving placeable data.")
+
+    if not data.roguelite_manager then
+        data.roguelite_manager = {}
+    end
+
+    data.roguelite_manager.placeables_version = m_data.placeables_version
+    data.roguelite_manager.placeables = m_data.placeables
+end
+
+local function load_state(data)
+    if not IsHardcoreMode() then
+        return
+    end
+
+    if not data.roguelite_manager then
+        return
+    end
+
+    local placeables_version = data.roguelite_manager.placeables_version
+
+    if placeables_version and placeables_version >= 1 then
+        m_data.placeables = data.roguelite_manager.placeables
+    end
+
+    data.roguelite_manager.placeables_version = nil
+    data.roguelite_manager.placeables = nil
+end
+
+function roguelite_load_state(save_data)
+    if config.is_placeables_restore_enabled then
+        if save_data.placeables_version and save_data.placeables_version >= 1 then
+            restore_prior_state_placeables_v1(save_data)
+        end
+    end
+end
+
+function roguelite_save_state(save_data)
+    save_data.placeables_version = m_data.placeables_version
+    save_data.placeables = get_player_placeables()
+end
+
+function append_mcm_options(gr)
+end
+
+function on_option_change()
+end
+
+function on_game_load()
+    if ui_mcm then
+	    on_option_change()
+    end
+end
+
+function on_game_start()
+	RegisterScriptCallback("on_game_load", on_game_load)
+    RegisterScriptCallback("save_state", save_state)
+    RegisterScriptCallback("load_state", load_state)
+
+    roguelite_manager.debug_write("Placeables module callbacks registered")
+end

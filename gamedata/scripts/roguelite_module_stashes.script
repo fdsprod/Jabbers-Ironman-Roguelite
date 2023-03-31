@@ -24,15 +24,6 @@ local placeable_containers_section_names = {
     "workshop_stash"
 }
 
-local placeable_objects_section_names = {
-    "placeable_metal_torch",
-    "placeable_gas_lamp",
-    "placeable_gas_lamp_gamma",
-    "placeable_light_altar",
-    "placeable_radio",
-    "placeable_piano",
-}
-
 local m_data = {
     stashes_version = 2,
     stashes = {},
@@ -63,11 +54,14 @@ local function restore_prior_state_stashes_v1(data)
     for _, stash_data in pairs(data.stashes) do
         if stash_data then
             roguelite_manager.debug_write("Restoring stash")
+
             local pos = vector():set(stash_data.position.x, stash_data.position.y, stash_data.position.z)
             local se_obj = alife_create(stash_data.section, pos, stash_data.level_vertex_id, stash_data.game_vertex_id)
             
             if se_obj then
-                se_obj.angle = vector():set(stash_data.angle.x, stash_data.angle.y, stash_data.angle.z)
+                if stash_data.angle then
+                    se_obj.angle = vector():set(stash_data.angle.x, stash_data.angle.y, stash_data.angle.z)
+                end
 
                 if config.show_stashes_on_pda then
                     level.map_add_object_spot_ser(se_obj.id, "treasure_player", stash_data.txt)
@@ -76,6 +70,7 @@ local function restore_prior_state_stashes_v1(data)
                 if stash_data.parent_obj then
                     roguelite_manager.debug_write("Spawning parent item "..stash_data.parent_obj.section)
                     pos = vector():set(stash_data.parent_obj.position.x, stash_data.parent_obj.position.y, stash_data.parent_obj.position.z)
+                    
                     local p_se_obj = alife_create(stash_data.parent_obj.section, pos, stash_data.parent_obj.level_vertex_id, stash_data.parent_obj.game_vertex_id)
                     
                     if p_se_obj then
@@ -90,9 +85,9 @@ local function restore_prior_state_stashes_v1(data)
                     end
                 end
 
+                roguelite_manager.debug_write("Updating restored stash id "..tostring(stash_data.id).." to id "..se_obj.id)
+               
                 stash_data.id = se_obj.id
-
-                m_data.stashes[stash_data.id] = stash_data
 
                 for _, item_data in pairs(stash_data.items) do
                     local class = ini_sys:r_string_ex(item_data.section,"class") or nil
@@ -107,7 +102,9 @@ local function restore_prior_state_stashes_v1(data)
                     end
                 end
 
-                roguelite_manager.debug_write("Restored player stash "..stash_data.id.." ".. stash_data.txt .. " with "..tablelength(stash_data.items).." items.")
+                m_data.stashes[stash_data.id] = stash_data
+
+                roguelite_manager.debug_write("Restored player stash "..stash_data.id.." ".. stash_data.txt .. " with "..tablelength(m_data.stashes[stash_data.id].items).." items.")
             end
         else 
             roguelite_manager.debug_write("Not expected.")
@@ -122,7 +119,6 @@ local function restore_prior_state_money_v1(data)
         roguelite_manager.debug_write("Restoring money")
         db.actor:give_money(data.money)
     end
-    db.actor:give_money(200000)
 end
 
 local function try_spawn_stash(box)
@@ -214,33 +210,6 @@ local function get_player_stashes()
             if table_has_value(placeable_containers_section_names, section_name) and se_obj.parent_id ~= AC_ID then
                 save_stash(se_obj, section_name, stash_data, sim)
             end
-            
-            -- if table_has_value(placeable_objects_section_names, section_name) and se_obj.parent_id ~= AC_ID then
-            --     roguelite_manager.debug_write("Found placeable obj " .. se_obj:name() .. " " .. se_obj.id .. ".")
-
-            --     local pos = se_obj.position
-            --     local rot = se_obj.angle
-
-            --     stash_data[se_obj.id] = {
-            --         id = se_obj.id,
-            --         section = section_name,
-            --         position = {
-            --             x = pos.x,
-            --             y = pos.y,
-            --             z = pos.z
-            --         },
-            --         angle = {
-            --             x = rot.x,
-            --             y = rot.y,
-            --             z = rot.z
-            --         },
-            --         level_vertex_id = se_obj.m_level_vertex_id,
-            --         game_vertex_id = se_obj.m_game_vertex_id,
-            --         txt = txt,
-            --         is_container = false,
-            --         items = {}
-            --     }
-            -- end
         end
     end
 
@@ -306,6 +275,8 @@ local function load_state(data)
         return
     end
 
+    roguelite_manager.debug_write("Loading stash data.")
+
     local stashes_version = data.roguelite_manager.stashes_version
 
     if stashes_version >= 2 then
@@ -315,14 +286,14 @@ local function load_state(data)
         end
     end
 
-    if stashes_version == 1 then
+    if stashes_version >= 1 then
         if  data.roguelite_manager.stashes then
             roguelite_manager.debug_write("Restoring stash data from prior save.")
             m_data.stashes = data.roguelite_manager.stashes
         end
-        if  data.roguelite_manager.stashes then
+        if  data.roguelite_manager.item_uses_data then
             roguelite_manager.debug_write("Restoring item use data from prior save.")
-            m_data.item_uses_data = data.roguelite_manager.item_uses_data or m_data.item_uses_data
+            m_data.item_uses_data = data.roguelite_manager.item_uses_data
         end
     end
 
@@ -351,9 +322,11 @@ local function physic_object_on_use_callback(box, who)
 
     local section_name = box:section()
 
-    if table_has_value(placeable_containers_section_names, section_name) then
-        try_spawn_stash(box)
+    if not table_has_value(placeable_containers_section_names, section_name) then
+        roguelite_manager.debug_write("physic_object_on_use_callback doesn't support container type ".. section_name)
     end
+    
+    try_spawn_stash(box)
 end
 
 local function actor_on_item_put_in_box(box, item)
