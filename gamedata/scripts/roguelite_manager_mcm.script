@@ -10,8 +10,14 @@ function on_mcm_load()
                 text = "ui_mcm_roguelite_title",
                 size = {512,50},
                 spacing = 20
-            },
+            },    
             --Global Settings
+            {
+                id = "desc_mcm",
+                type = "desc",
+                text = "ui_mcm_roguelite_global_description",
+                clr = {255, 255 ,255 ,0},
+            },
             {
                 id = "is_roguelite_enabled",
                 type = "check",

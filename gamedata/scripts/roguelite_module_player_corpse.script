@@ -122,17 +122,20 @@ local function get_corpse_data()
     return corpse_data
 end
 
+local function empty_function ()
+end
+
 local function spawn_corpse(data) 
     roguelite_manager.debug_write("Spawning player corpse from prior playthrough.")
 
-    local sim = alife()
 	local pos = vector():set(data.position.x, data.position.y, data.position.z)
     local se_mimic = alife_create("stalker_azazel", pos, data.m_level_vertex_id, data.m_game_vertex_id)
 
 	if (se_mimic) then 
 		se_mimic:set_character_name(data.character_name)
-		se_mimic:set_profile_name(data.profile_name)
-        
+		se_mimic:set_profile_name(data.profile_name)    
+        se_mimic:kill() 
+
         data.id = se_mimic.id;
 		
 		local state = alife_storage_manager.get_se_obj_state(se_mimic, true)
@@ -146,7 +149,6 @@ local function spawn_corpse(data)
         -- HACK: Add a quest item to the corpse so it doesn't despawn
         alife_create("sl_ht_walkie_talkie", pos, data.m_level_vertex_id, data.m_game_vertex_id, se_mimic.id, false)
         
-        se_mimic:kill()
 	end
 end
 
@@ -210,10 +212,12 @@ local function load_state(data)
 end
 
 local function restore_prior_state_corpse_v1(data)
-    roguelite_manager.debug_write("Restoring corpse data.")
-    m_data.corpse = data.corpse
-    if m_data.corpse then
-        roguelite_manager.debug_write("Player corpse restored.")
+    if config.drop_player_inventory_on_death then
+        roguelite_manager.debug_write("Restoring corpse data.")
+        m_data.corpse = data.corpse
+        if m_data.corpse then
+            roguelite_manager.debug_write("Player corpse restored.")
+        end
     end
 end
 
@@ -238,11 +242,17 @@ function append_mcm_options(gr)
     roguelite_manager.debug_write("Appending corpse module mcm options.")
     table.insert(gr, { id = "line" , type = "line" })
     table.insert(gr, {
+        id = "desc_mcm",
+        type = "desc",
+        text = "drop_player_inventory_description",
+        clr = {255, 255 ,255 ,0},
+    })
+    table.insert(gr, {
         id = "drop_player_inventory_on_death_enabled",
         type = "check",
         val = 1,
         def = true
-    })
+    }) 
     table.insert(gr, {
         id = "drop_player_inventory_item_loss_chance",
         type = "track",
@@ -311,6 +321,22 @@ function on_game_start()
     roguelite_manager.debug_write("Corpse module callbacks registered")
 end
 
+local old_keep_item = death_manager.keep_item
+
+local function new_keep_item(npc, item)
+    if not m_data.corpse then
+        old_keep_item(npc, item)
+        return
+    end
+
+    if not m_data.is_looted and m_data.corpse and m_data.corpse.id == npc:id() then   
+        return
+    else
+        old_keep_item(npc, item)
+    end
+end
+
+
 local old_create_release_item = death_manager.create_release_item
 local function new_create_release_item(npc)
     roguelite_manager.debug_write("new_create_release_item npc.id(" .. tostring(npc:id()) .. ")")
@@ -343,12 +369,13 @@ local function new_create_release_item(npc)
 		local function release_actor_item(temp, item)
 			alife_release_id(item:id())
 		end
-		db.actor:iterate_inventory(release_actor_item,nil)
+
+		npc:iterate_inventory(release_actor_item,nil)
 
         for _, item_data in pairs(m_data.corpse.items) do
             local section = item_data.section
             local loot_dice_roll = math.random(0, 100)
-            roguelite_manager.debug_write("loot_dice_roll="..tostring(loot_dice_roll).." for item "..section)
+            roguelite_manager.debug_write("loot_dice_roll="..tostring(loot_dice_roll).." < "..tostring(loss_chance).." for item "..section)
             if loot_dice_roll < loss_chance then
                 roguelite_manager.restore_item(section, npc:position(), npc:level_vertex_id(), npc:game_vertex_id(), item_data, npc:id(), false)
             else
@@ -360,6 +387,7 @@ local function new_create_release_item(npc)
     end    
 end
 
+death_manager.keep_item = new_keep_item
 death_manager.create_release_item = new_create_release_item
 
 

@@ -51,6 +51,12 @@ local function tablelength(T)
 end
 
 local function restore_prior_state_stashes_v1(data)
+    local state = alife_storage_manager.get_state()
+    
+    if not (state.player_created_stashes) then 
+        state.player_created_stashes = {}
+    end
+
     for _, stash_data in pairs(data.stashes) do
         if stash_data then
             roguelite_manager.debug_write("Restoring stash")
@@ -58,7 +64,9 @@ local function restore_prior_state_stashes_v1(data)
             local pos = vector():set(stash_data.position.x, stash_data.position.y, stash_data.position.z)
             local se_obj = alife_create(stash_data.section, pos, stash_data.level_vertex_id, stash_data.game_vertex_id)
             
-            if se_obj then
+            if se_obj then                
+                state.player_created_stashes[se_obj.id] = stash_data.section        
+
                 if stash_data.angle then
                     se_obj.angle = vector():set(stash_data.angle.x, stash_data.angle.y, stash_data.angle.z)
                 end
@@ -366,9 +374,11 @@ function roguelite_load_state(save_data)
 end
 
 function roguelite_save_state(save_data)
-    save_data.stashes_version = m_data.stashes_version
-    save_data.stashes = get_player_stashes()
-    save_data.money = db.actor:money()
+    if config.is_stash_restore_enabled then
+        save_data.stashes_version = m_data.stashes_version
+        save_data.stashes = get_player_stashes()
+        save_data.money = db.actor:money()
+    end
 end
 
 function append_mcm_options(gr)
