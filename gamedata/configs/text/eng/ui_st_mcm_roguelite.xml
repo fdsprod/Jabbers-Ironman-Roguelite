@@ -36,19 +36,26 @@
         <text>Player Corpse Persistence</text>
     </string>
     <string id="ui_mcm_roguelite_drop_player_inventory_on_death_enabled">
-        <text>Enabled</text>
+        <text>Restore Last Corpse</text>
     </string>
     <string id="ui_mcm_roguelite_drop_player_inventory_item_loss_chance">
         <text>Inventory item loss % chance</text>
     </string>
 	<string id="ui_mcm_roguelite_drop_player_inventory_item_loss_chance_desc">
-		<text>This is a chance, not a gaurenteed %.  25% chance would mean every item in your stash get's a dice roll and each item has a 25% chance to be lost.</text>
+		<text>This is a chance, not a gaurentee.  Example: 25% chance means every item on your corpse get's a dice roll and has a 25% chance to be lost.</text>
 	</string>
+    <string id="ui_mcm_roguelite_drop_player_inventory_item_loss_max_ingame_time_enabled">
+        <text>Enabled Loss Time</text>
+    </string>
     <string id="ui_mcm_roguelite_drop_player_inventory_item_loss_max_ingame_time_seconds">
-        <text>Gameplay time (in seconds) for maximum item loss % chance</text>
+        <text>Loss Time (in seconds) for maximum item loss % chance</text>
     </string>
 	<string id="ui_mcm_roguelite_drop_player_inventory_item_loss_max_ingame_time_seconds_desc">
-		<text>Example: If you have it set to 1 hour and 25% then retrieve your corpse 30 minutes after you spawn in you have a 12.5% chance to lose each item on your corpse.  The only caveat is there is a 5 minute grace period right when you start a new game.</text>
+		<text>Your settings are Item Loss Chance 25%, Item Loss Time 1 hour.
+You die in Army warehouse as a Loner.
+Your next start it takes you 45 minutes to get to Army Warehouse and you loot your corpse.
+The item loss % would be 0.75 * 0.25 since it took you 3/4 of an hour to get to your corpse.
+</text>
 	</string>
 
     <!--Trader Reputation Settings-->
@@ -56,7 +63,7 @@
         <text>Trader Reputation Persistence</text>
     </string>
     <string id="ui_mcm_roguelite_is_trader_rep_restore_enabled">
-        <text>Enabled</text>
+        <text>Restore Trader Rep</text>
     </string>
     <string id="ui_mcm_roguelite_trader_rep_penalty_percent">
         <text>Trader repuation loss % between playthroughs</text>
@@ -67,7 +74,7 @@
         <text>Charater Reputation Persistence</text>
     </string>
     <string id="ui_mcm_roguelite_is_character_rep_restore_enabled">
-        <text>Enabled</text>
+        <text>Restore Character Rep</text>
     </string>
     <string id="ui_mcm_roguelite_character_rep_penalty_percent">
         <text>Character repuation loss % between playthroughs</text>

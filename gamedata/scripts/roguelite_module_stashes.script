@@ -4,17 +4,6 @@
 	Jabbers Ironman Roguelite - Stashes Module
 --]]
 
-local config = {
-    -- Enables or Disables the restoration of player stashes for new games
-    is_stash_restore_enabled = true,
-    -- Enables or Disables the restoration of player money for new games
-    is_money_restore_enabled = true,
-    -- Enables or Disables showing the stashes on the PDA for new games
-    show_stashes_on_pda = true,
-    -- Percentage loss of condition for each item in a player stash
-    stash_item_condition_loss_percent = 0.01,
-}
-
 local placeable_containers_section_names = {
     "inv_backpack",
     "placeable_case",
@@ -38,7 +27,7 @@ local function degrade(name, condition)
     if not condition then
         return condition
     end
-    local degrade_amount = condition * config.stash_item_condition_loss_percent
+    local degrade_amount = condition * roguelite_manager_mcm.get_config("stash_item_condition_loss_percent", 0.01)
     local new_condition = condition - degrade_amount
     roguelite_manager.debug_write("Degrading "..name.." from "..condition.." to "..new_condition)
     return new_condition
@@ -71,7 +60,7 @@ local function restore_prior_state_stashes_v1(data)
                     se_obj.angle = vector():set(stash_data.angle.x, stash_data.angle.y, stash_data.angle.z)
                 end
 
-                if config.show_stashes_on_pda then
+                if roguelite_manager_mcm.get_config("show_stashes_on_pda", true) then
                     level.map_add_object_spot_ser(se_obj.id, "treasure_player", stash_data.txt)
                 end
 
@@ -123,7 +112,7 @@ end
 local function restore_prior_state_money_v1(data)
     -- Only restore the previous amount if it is more than the amount
     -- you start with in a new game.
-    if data.money and db.actor:money() < data.money then
+    if roguelite_manager_mcm.get_config("is_money_restore_enabled", true) and data.money and db.actor:money() < data.money then
         roguelite_manager.debug_write("Restoring money")
         db.actor:give_money(data.money)
     end
@@ -363,7 +352,7 @@ local function actor_on_item_put_in_box(box, item)
 end
 
 function roguelite_load_state(save_data)
-    if config.is_stash_restore_enabled then
+    if roguelite_manager_mcm.get_config("is_stash_restore_enabled", true) then
         if save_data.stashes_version >= 2 then
             restore_prior_state_money_v1(save_data)
         end
@@ -374,7 +363,7 @@ function roguelite_load_state(save_data)
 end
 
 function roguelite_save_state(save_data)
-    if config.is_stash_restore_enabled then
+    if roguelite_manager_mcm.get_config("is_stash_restore_enabled", true) then
         save_data.stashes_version = m_data.stashes_version
         save_data.stashes = get_player_stashes()
         save_data.money = db.actor:money()
@@ -423,15 +412,10 @@ end
 function on_option_change()
     local get_config = roguelite_manager_mcm.get_config
 
-    config.is_stash_restore_enabled = get_config("is_stash_restore_enabled") or true
-    config.is_money_restore_enabled = get_config("is_money_restore_enabled") or true
-    config.show_stashes_on_pda = get_config("show_stashes_on_pda") or true
-    config.stash_item_condition_loss_percent = get_config("stash_item_condition_loss_percent") or 0.01
-
-    roguelite_manager.debug_write("is_stash_restore_enabled = "..tostring(config.is_stash_restore_enabled))
-    roguelite_manager.debug_write("is_money_restore_enabled = "..tostring(config.is_money_restore_enabled))
-    roguelite_manager.debug_write("show_stashes_on_pda = "..tostring(config.show_stashes_on_pda))
-    roguelite_manager.debug_write("stash_item_condition_loss_percent = "..tostring(config.stash_item_condition_loss_percent))
+    roguelite_manager.debug_write("is_stash_restore_enabled = "..tostring(get_config("is_stash_restore_enabled", true)))
+    roguelite_manager.debug_write("is_money_restore_enabled = "..tostring(get_config("is_money_restore_enabled", true)))
+    roguelite_manager.debug_write("show_stashes_on_pda = "..tostring(get_config("show_stashes_on_pda", true)))
+    roguelite_manager.debug_write("stash_item_condition_loss_percent = "..tostring(get_config("stash_item_condition_loss_percent", 0.01)))
 end
 
 function on_game_load()

@@ -4,13 +4,6 @@
 	Jabbers Ironman Roguelite - Player Corpse Module
 --]]
 
-local config = {
-    -- Drop the players inventory on death, will show as a backpack or players corpse on the next ironman run
-    drop_player_inventory_on_death = true,
-    drop_player_inventory_item_loss_chance = 0.25,
-    drop_player_inventory_item_loss_max_ingame_time_seconds = 3600
-}
-
 local m_data = {
     corpse_version = 2,
     corpse = nil,
@@ -149,6 +142,9 @@ local function spawn_corpse(data)
         -- HACK: Add a quest item to the corpse so it doesn't despawn
         alife_create("sl_ht_walkie_talkie", pos, data.m_level_vertex_id, data.m_game_vertex_id, se_mimic.id, false)
         
+        if roguelite_manager_mcm.get_config("show_stashes_on_pda", true) then
+            level.map_add_object_spot_ser(se_mimic.id, "treasure_player", data.character_name .. " corpse")
+        end
 	end
 end
 
@@ -212,7 +208,7 @@ local function load_state(data)
 end
 
 local function restore_prior_state_corpse_v1(data)
-    if config.drop_player_inventory_on_death then
+    if roguelite_manager_mcm.get_config("drop_player_inventory_on_death_enabled", true) then
         roguelite_manager.debug_write("Restoring corpse data.")
         m_data.corpse = data.corpse
         if m_data.corpse then
@@ -222,7 +218,7 @@ local function restore_prior_state_corpse_v1(data)
 end
 
 function roguelite_load_state(save_data)
-    if config.drop_player_inventory_on_death then
+    if roguelite_manager_mcm.get_config("drop_player_inventory_on_death_enabled", true) then
         if save_data.corpse_version and save_data.corpse_version >= 1 then
             restore_prior_state_corpse_v1(save_data)
         end
@@ -244,7 +240,7 @@ function append_mcm_options(gr)
     table.insert(gr, {
         id = "desc_mcm",
         type = "desc",
-        text = "drop_player_inventory_description",
+        text = "ui_mcm_roguelite_drop_player_inventory_description",
         clr = {255, 255 ,255 ,0},
     })
     table.insert(gr, {
@@ -263,6 +259,12 @@ function append_mcm_options(gr)
         def = 0.25
     })
     table.insert(gr, {
+        id = "drop_player_inventory_item_loss_max_ingame_time_enabled",
+        type = "check",
+        val = 1,
+        def = true
+    }) 
+    table.insert(gr, {
         id = "drop_player_inventory_item_loss_max_ingame_time_seconds",
         type = "track",
         val = 2,
@@ -276,13 +278,10 @@ end
 function on_option_change()
     local get_config = roguelite_manager_mcm.get_config  
     
-    config.drop_player_inventory_on_death = get_config("drop_player_inventory_on_death_enabled") or true
-    config.drop_player_inventory_item_loss_chance = get_config("drop_player_inventory_item_loss_chance") or 0.25
-    config.drop_player_inventory_item_loss_max_ingame_time_seconds = get_config("drop_player_inventory_item_loss_max_ingame_time_seconds") or 3600
-
-    roguelite_manager.debug_write("drop_player_inventory_on_death = "..tostring(config.drop_player_inventory_on_death))  
-    roguelite_manager.debug_write("drop_player_inventory_item_loss_chance = "..tostring(config.drop_player_inventory_item_loss_chance))
-    roguelite_manager.debug_write("drop_player_inventory_item_loss_max_ingame_time_seconds = "..tostring(config.drop_player_inventory_item_loss_max_ingame_time_seconds))
+    roguelite_manager.debug_write("drop_player_inventory_on_death = "..tostring(get_config("drop_player_inventory_on_death_enabled", true)))  
+    roguelite_manager.debug_write("drop_player_inventory_item_loss_chance = "..tostring(get_config("drop_player_inventory_item_loss_chance", 0.25)))
+    roguelite_manager.debug_write("drop_player_inventory_item_loss_max_ingame_time_enabled = "..tostring(get_config("drop_player_inventory_item_loss_max_ingame_time_enabled", true)))
+    roguelite_manager.debug_write("drop_player_inventory_item_loss_max_ingame_time_seconds = "..tostring(get_config("drop_player_inventory_item_loss_max_ingame_time_seconds", 3600)))
 end
 
 function on_game_load()
@@ -351,17 +350,22 @@ local function new_create_release_item(npc)
     if not m_data.is_looted and m_data.corpse and m_data.corpse.id == npc:id() then        
         m_data.is_looted = true
         
-        local tg = get_time_elapsed()
-        local min_tg = 5*60 -- 5 minute grace period
-        local max_tg = config.drop_player_inventory_item_loss_max_ingame_time_seconds
-        local loss_chance = (math.max(tg - min_tg, 0)) / (max_tg - min_tg)
+        local loss_chance = 100 - (roguelite_manager_mcm.get_config("drop_player_inventory_item_loss_chance", 0.25) * 100)
+
+        if(roguelite_manager_mcm.get_config("drop_player_inventory_item_loss_max_ingame_time_enabled", true)) then
+            local tg = get_time_elapsed()
+            local min_tg = 5*60 -- 5 minute grace period
+            local max_tg = roguelite_manager_mcm.get_config("drop_player_inventory_item_loss_max_ingame_time_seconds", 3600)
+            
+            loss_chance = (math.max(tg - min_tg, 0)) / (max_tg - min_tg)
+            
+            roguelite_manager.debug_write("tg="..tostring(tg))
+            roguelite_manager.debug_write("min_tg="..tostring(min_tg))
+            roguelite_manager.debug_write("max_tg="..tostring(max_tg))
+            roguelite_manager.debug_write("loss_chance="..tostring(loss_chance))
         
-        roguelite_manager.debug_write("tg="..tostring(tg))
-        roguelite_manager.debug_write("min_tg="..tostring(min_tg))
-        roguelite_manager.debug_write("max_tg="..tostring(max_tg))
-        roguelite_manager.debug_write("loss_chance="..tostring(loss_chance))
-    
-        loss_chance = 100 - ((config.drop_player_inventory_item_loss_chance * loss_chance) * 100);
+            loss_chance = 100 - ((roguelite_manager_mcm.get_config("drop_player_inventory_item_loss_chance", 0.25) * loss_chance) * 100);
+        end
 
         roguelite_manager.debug_write("final_loss_chance="..tostring(loss_chance))
 

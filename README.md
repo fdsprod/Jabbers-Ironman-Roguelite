@@ -23,6 +23,8 @@ A subgenre of roguelikes that has most of the game design philosophies of roguel
 - Restore player created stashes and items within between Ironman playthroughs
  - Player stashes are be marked on your PDA map just stash locations from missions
  - Item condition degredation applied to each applicable item between Ironman playthroughs
+- Restore player money between Ironman playthroughs
+- Restore player hideout stashes and items (lamps, piano, etc.) between Ironman playthroughs
 - Restore trader rep with optional penalty loss between Ironman playthroughs
  - Trader rep will never go below the value a trader receives at the start of a new game
 - Restore character rep with optional penalty loss between Ironman playthroughs
@@ -45,10 +47,12 @@ Simply extract into your S.T.A.L.K.E.R. Anomaly installation folder.
 **A**: Not really, while Azazel does allows you to continue as a new stalker after dieing, it's missing the "start over" aspect that Ironman provides.  In roguelite games, when you die, you are dead and you need to start over.  This is what Ironman is about.  That said, usually roguelite games also give you some sort of progression to make successive playthroughs a bit easier, usually through something like achievements, skills, items, etc.  This is what I hope to capture with this mod.
 
 **Q**: How do I reset an Ironman playthrough so the stashes/rep/etc are not restored on my next playthrough  
-**A**: Simply delete the file in appdata pertaining to the faction you want to start over with.  Ex: appdata/roguelite_actor_bandit.state
+**A**: Simply delete the file in appdata pertaining to the faction you want to start over with.  
+       Ex: appdata/roguelite_actor_bandit.state 
+       For G.A.M.M.A its in the GAMMA folder under overwrite\bin\appdata
 
 **Q**: I have a mod that I would like to persist information across Ironman playthroughs, how do I do that?  
-**A**: Please reference roguelite_module_haru_skills.script as an example of how to create a module and integrate your system with this one.  Your module's filename must be prefixed with "roguelite_module_" or it will not be loaded by roguelite_manager as a module.
+**A**: Please reference roguelite_module_*module_name*.script as an example of how to create a module and integrate your system with this one.  Your module's filename must be prefixed with "roguelite_module_" or it will not be loaded by roguelite_manager as a module.
     
 **Q**: I have an idea for progression that isnt included in this mod, how do I contact you.  
 **A**: Well, the easiest way would be discord.  You can join my personal discord (https://discord.gg/HRyCGesuXq) and message me direct. I can also be found live most days on Twitch (https://www.twitch.tv/jabbers_) so feel free to stop by and say Hi! Additionally you can leave me a message on moddb... although this isnt my preferred communication platform so my response may be slower.   
@@ -56,4 +60,7 @@ Simply extract into your S.T.A.L.K.E.R. Anomaly installation folder.
 **TODO**
 
 - Implement some sort of Achievement based character progression system.  Example: Finishing the questline "Living Ledgend" might give the player a permanent bonus to carry weight.  This bonus would be applied on all successive Ironman playthroughs.  
-- Restore learned recipes
+- Restore learned recipes`
+
+**ACKNOWLEDGEMENTS**
+Big thanks to br4iny for help testing!

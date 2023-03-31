@@ -23,13 +23,7 @@ function on_mcm_load()
                 type = "check",
                 val = 1,
                 def = true
-            },
-            {
-                id = "debug",
-                type = "check",
-                val = 1,
-                def = false
-            },
+            }
         }
     }
 
@@ -41,10 +35,27 @@ function on_mcm_load()
         end
     end
 
+    table.insert(op.gr, { id = "line" , type = "line" })
+    table.insert(op.gr, {
+        id = "desc_mcm",
+        type = "desc",
+        text = "ui_mcm_roguelite_debug_description",
+        clr = {255, 255 ,255 ,0},
+    })
+    table.insert(op.gr, {
+        id = "debug",
+        type = "check",
+        val = 1,
+        def = false
+    });
+
     return op
 end
 
-function get_config(key)
+function get_config(key, default_when_nil)
     local opt = ui_mcm and ui_mcm.get("roguelite/"..key)
+    if opt == nil then
+        opt = default_when_nil
+    end
     return opt
 end

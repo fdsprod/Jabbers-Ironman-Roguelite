@@ -4,15 +4,6 @@
 	Jabbers Ironman Roguelite
 --]]
 
-local config = {
-    -- Enables or Disables the restoration of character rep for new games
-    is_character_rep_restore_enabled = true,
-    -- Percentage loss of character rep when restored for new games
-    character_rep_penalty_percent = 0.02,
-    -- Percentage loss of character rank when restored for new games
-    character_rank_penalty_percent = 0.02
-}
-
 local m_data = {
     character_rep_version = 2,
 }
@@ -22,7 +13,7 @@ local m_data = {
 --------------------------------
 local function degrade(name, current_value, restored_value, percent)
     local value = restored_value
-    local loss = value * config.character_rep_penalty_percent
+    local loss = value * roguelite_manager_mcm.get_config("character_rep_penalty_percent", 0.02)
 
     value = value - loss
 
@@ -44,7 +35,7 @@ local function restore_prior_state_actor_rep_v1(data)
         return
     end
 
-    local rept = degrade("Reputation", db.actor:character_reputation(), data.character_rep, config.character_rep_penalty_percent)
+    local rept = degrade("Reputation", db.actor:character_reputation(), data.character_rep, roguelite_manager_mcm.get_config("character_rep_penalty_percent", 0.02))
 
     db.actor:set_character_reputation(rept)
     
@@ -53,8 +44,8 @@ local function restore_prior_state_actor_rep_v1(data)
 end
 
 local function restore_prior_state_actor_rep_v2(data)
-    local rept = degrade("Reputation", db.actor:character_reputation(), data.character_rep, config.character_rep_penalty_percent)
-    local rank = degrade("Rank", db.actor:character_rank(), data.character_rank, config.character_rank_penalty_percent)
+    local rept = degrade("Reputation", db.actor:character_reputation(), data.character_rep, roguelite_manager_mcm.get_config("character_rep_penalty_percent", 0.02))
+    local rank = degrade("Rank", db.actor:character_rank(), data.character_rank, roguelite_manager_mcm.get_config("character_rank_penalty_percent", 0.02))
 
     db.actor:set_character_reputation(rept)
     db.actor:set_character_rank(rept)
@@ -71,7 +62,7 @@ end
 --------------------------------
 
 function roguelite_load_state(save_data)
-    if config.is_character_rep_restore_enabled then
+    if roguelite_manager_mcm.get_config("is_character_rep_restore_enabled", true) then
         if save_data.character_rep_version == 1 then
             restore_prior_state_actor_rep_v1(save_data)
         elseif save_data.character_rep_version == 2 then
@@ -125,13 +116,9 @@ end
 function on_option_change()
     local get_config = roguelite_manager_mcm.get_config
 
-    config.is_character_rep_restore_enabled = get_config("is_character_rep_restore_enabled")
-    config.character_rep_penalty_percent = get_config("character_rep_penalty_percent")
-    config.character_rank_penalty_percent = get_config("character_rank_penalty_percent")
-
-    roguelite_manager.debug_write("is_character_rep_restore_enabled = "..tostring(config.is_character_rep_restore_enabled))
-    roguelite_manager.debug_write("character_rep_penalty_percent = "..tostring(config.character_rep_penalty_percent))
-    roguelite_manager.debug_write("character_rank_penalty_percent = "..tostring(config.character_rank_penalty_percent))
+    roguelite_manager.debug_write("is_character_rep_restore_enabled = "..tostring(get_config("is_character_rep_restore_enabled", true)))
+    roguelite_manager.debug_write("character_rep_penalty_percent = "..tostring(get_config("character_rep_penalty_percent", 0.02)))
+    roguelite_manager.debug_write("character_rank_penalty_percent = "..tostring(get_config("character_rank_penalty_percent", 0.02)))
 end
 
 function on_game_load()

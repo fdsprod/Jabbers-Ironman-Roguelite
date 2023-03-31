@@ -29,10 +29,7 @@
 --]]
 
 local config = {
-    -- Enables or Disables the entire roguelite experience
-    is_roguelite_enabled = true,
-    -- Allows log output for debugging
-    debug = true
+    version = "0.83.5",
 }
 
 --------------------------------
@@ -77,12 +74,10 @@ local function print_table (tbl, indent)
 end
 
 function debug_write(output)
-    if config.debug then
-        if (type(output) == "table") then
-            utils_data.debug_write("Roguelite Manager: "..print_table(output))
-        else
-            utils_data.debug_write("Roguelite Manager: "..output)
-        end
+    if (type(output) == "table") then
+        utils_data.debug_write("Roguelite Manager: "..print_table(output))
+    else
+        utils_data.debug_write("Roguelite Manager: "..output)
     end
 end
 
@@ -325,7 +320,7 @@ end
 --------------------------------
 
 local function actor_on_before_death(whoID, flags)
-    if not config.is_roguelite_enabled then
+    if not roguelite_manager_mcm.get_config("is_roguelite_enabled", true) then
         debug_write("actor_on_before_death roguelite disabled.")
         return
     end
@@ -358,7 +353,7 @@ local function actor_on_before_death(whoID, flags)
 end
 
 local function actor_on_first_update()
-    if not config.is_roguelite_enabled then
+    if not roguelite_manager_mcm.get_config("is_roguelite_enabled", true) then
         debug_write("actor_on_first_update roguelite disabled.")
         return
     end
@@ -395,17 +390,14 @@ function get_modules()
 end
 
 function is_enabled()
-    return config.is_roguelite_enabled
+    return roguelite_manager_mcm.get_config("is_roguelite_enabled", true)
 end
 
 function on_option_change()
     local get_config = roguelite_manager_mcm.get_config
 
-    config.is_roguelite_enabled = get_config("is_roguelite_enabled")
-    config.debug = get_config("debug")
-
-    debug_write("is_roguelite_enabled = "..tostring(config.is_roguelite_enabled))
-    debug_write("debug = "..tostring(config.debug))
+    debug_write("is_roguelite_enabled = "..tostring(get_config("is_roguelite_enabled", true)))
+    debug_write("debug = "..tostring(get_config("debug", false)))
 end
 
 function on_game_load()
@@ -421,6 +413,7 @@ function on_game_start()
 end
 
 local function main_menu_on_init()
+    debug_write("Version "..config.version)
     debug_write("Core Registered")
     debug_write("Initializing modules.")
 

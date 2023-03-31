@@ -4,13 +4,6 @@
 	Jabbers Ironman Roguelite
 --]]
 
-local config = {
-    -- Enables or Disables the restoration of trader rep for new games
-    is_trader_rep_restore_enabled = true,
-    -- Percentage loss of trader rep when restored for new games
-    trader_rep_penalty_percent = 0.02,
-}
-
 local m_data = {
     trader_rep_version = 1,
     trader_rep = {}
@@ -28,7 +21,7 @@ local function update_character_rep(data, npc)
     end
 
     local abs_rept = math.abs(rept)
-    local rept_loss = abs_rept * config.trader_rep_penalty_percent
+    local rept_loss = abs_rept * roguelite_manager_mcm.get_config("trader_rep_penalty_percent", 0.02)
 
     rept = rept - rept_loss
 
@@ -123,7 +116,7 @@ function roguelite_save_state(save_data)
 end
 
 function roguelite_load_state(save_data)
-    if config.is_trader_rep_restore_enabled then
+    if roguelite_manager_mcm.get_config("is_trader_rep_restore_enabled", true) then
         if save_data.trader_rep_version == 1 then
             restore_prior_state_trader_rep_v1(save_data)
         end
@@ -160,11 +153,8 @@ end
 function on_option_change()
     local get_config = roguelite_manager_mcm.get_config
 
-    config.is_trader_rep_restore_enabled = get_config("is_trader_rep_restore_enabled")
-    config.trader_rep_penalty_percent = get_config("trader_rep_penalty_percent")
-
-    roguelite_manager.debug_write("is_trader_rep_restore_enabled = "..tostring(config.is_trader_rep_restore_enabled))
-    roguelite_manager.debug_write("trader_rep_penalty_percent = "..tostring(config.trader_rep_penalty_percent))
+    roguelite_manager.debug_write("is_trader_rep_restore_enabled = "..tostring(get_config("is_trader_rep_restore_enabled", true)))
+    roguelite_manager.debug_write("trader_rep_penalty_percent = "..tostring(get_config("trader_rep_penalty_percent", 0.02)))
 end
 
 function on_game_load()
