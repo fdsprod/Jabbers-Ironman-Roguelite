@@ -1,5 +1,3 @@
-<?xml version="1.0" encoding="windows-1251"?>
-
 <string_table>
 	<string id="ui_mcm_menu_roguelite">
 		<text>Ironman Roguelite</text>
@@ -9,84 +7,90 @@
     <string id="ui_mcm_roguelite_title">
         <text>Jabbers' Ironman Roguelite Settings</text>
     </string>
-
     <!--Global Settings-->
     <string id="ui_mcm_roguelite_title">
-        <text>Jabbers' Ironman Roguelite Settings</text>
-    </string>
+        <text>Настройка Jabbers' Ironman Roguelite </text>
+    </string> 
     <string id="ui_mcm_roguelite_global_description">
-        <text>Global Settings</text>
+        <text>Глобальные настройки</text>
     </string>
     <string id="ui_mcm_roguelite_is_roguelite_enabled">
-        <text>Enabled</text>
+        <text>Включено</text>
     </string>
 
     <!--Player Stash Settings-->
     <string id="ui_mcm_roguelite_stashes_description">
-        <text>Player Stashes Persistence</text>
+        <text>Сохранение тайников игрока</text>
     </string>
     <string id="ui_mcm_roguelite_is_stash_restore_enabled">
-        <text>Restore Stashes Enabled</text>
+        <text>Включено сохранение тайников</text>
     </string>
     <string id="ui_mcm_roguelite_show_stashes_on_pda">
-        <text>Show restored player stashes on your PDA</text>
+        <text>Показывать восстановленные тайники на карте КПК</text>
     </string>
     <string id="ui_mcm_roguelite_stash_item_condition_loss_percent">
-        <text>Item condition degredation % between playthroughs</text>
+        <text>% ухудшения состояния предмета между прохождениями</text>
     </string>
     <string id="ui_mcm_roguelite_is_money_restore_enabled">
-        <text>Restore Money Enabled</text>
+        <text>Включить сохранение денег</text>
     </string>
     
     <!--Player Corpse Settings-->
     <string id="ui_mcm_roguelite_drop_player_inventory_description">
-        <text>Player Corpse Persistence</text>
+        <text>Настройки трупа игрока</text>
     </string>
     <string id="ui_mcm_roguelite_drop_player_inventory_on_death_enabled">
-        <text>Enabled</text>
+        <text>Включить труп игрока</text>
     </string>
     <string id="ui_mcm_roguelite_drop_player_inventory_item_loss_chance">
-        <text>Inventory item loss % chance</text>
+        <text>% шанса потери предмета из инвентаря при смерти</text>
     </string>
 	<string id="ui_mcm_roguelite_drop_player_inventory_item_loss_chance_desc">
-		<text>This is a chance, not a gaurenteed %.  25% chance would mean every item in your stash get's a dice roll and each item has a 25% chance to be lost.</text>
+		<text>Это ШАНС, а не гарантия. ПРИМЕР: 25%-й шанс означает, что каждый предмет на трупе вашего игрока получает бросок кубика и имеет 25%-й шанс быть потерянным.</text>
 	</string>
+    <string id="ui_mcm_roguelite_drop_player_inventory_item_loss_max_ingame_time_enabled">
+        <text>Включить кулдаун потери предмета</text>
+    </string>
     <string id="ui_mcm_roguelite_drop_player_inventory_item_loss_max_ingame_time_seconds">
-        <text>Gameplay time (in seconds) for maximum item loss % chance</text>
+        <text>Время потери (в секундах) для максимальной потери предмета, % шанса</text>
     </string>
 	<string id="ui_mcm_roguelite_drop_player_inventory_item_loss_max_ingame_time_seconds_desc">
-		<text>Example: If you have it set to 1 hour and 25% then retrieve your corpse 30 minutes after you spawn in you have a 12.5% chance to lose each item on your corpse.  The only caveat is there is a 5 minute grace period right when you start a new game.</text>
+		<text>Ваши настройки: вероятность потери предмета 25%, время потери предмета 1 час.
+Вы умираете на армейском складе как Одиночка.
+При следующем запуске вам потребуется 45 минут, чтобы добраться до армейского склада, и вы заберете свой труп.
+Процент потери предмета будет 0,75 * 0,25, так как вам потребовалось 3/4 часа, чтобы добраться до своего трупа.
+</text>
 	</string>
-    
+
     <!--Trader Reputation Settings-->
     <string id="ui_mcm_roguelite_trader_rep_description">
-        <text>����������� ��������� ��������</text>
+        <text>Настройки сохранения репутации у торговцев</text>
     </string>
     <string id="ui_mcm_roguelite_is_trader_rep_restore_enabled">
-        <text>��������</text>
+        <text>Сохранять репутацию игрока у торговцев</text>
     </string>
     <string id="ui_mcm_roguelite_trader_rep_penalty_percent">
-        <text>% ������ ��������� �������� ����� �������������</text>
+        <text>% потери репутации торговца между прохождениями</text>
     </string>
 
     <!--Charater Reputation Settings-->
     <string id="ui_mcm_roguelite_character_rep_description">
-        <text>��������� ��������� ���������</text>
+        <text>Настройки сохранения общей репутации</text>
     </string>
     <string id="ui_mcm_roguelite_is_character_rep_restore_enabled">
-        <text>��������</text>
+        <text>Сохранять общую репутацию игрока</text>
     </string>
     <string id="ui_mcm_roguelite_character_rep_penalty_percent">
-        <text>% ������ ��������� ��������� ����� �������������</text>
+        <text>% потери репутации персонажа между прохождениями</text>
     </string>
     <string id="ui_mcm_roguelite_character_rank_penalty_percent">
-        <text>% ������ ����� ��������� ����� �������������</text>
+        <text>% потери ранга персонажа между прохождениями</text>
     </string>
-
+    
     <string id="ui_mcm_roguelite_debug_description">
-        <text>Debug Settings</text>
+        <text>Настройки дебаг-режима</text>
     </string>
     <string id="ui_mcm_roguelite_debug">
-        <text>Debug</text>
+        <text>Дебаг-режим</text>
     </string>
 </string_table>
