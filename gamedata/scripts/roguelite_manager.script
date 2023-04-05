@@ -29,7 +29,7 @@
 --]]
 
 local config = {
-    version = "0.83.6",
+    version = "0.83.7",
 }
 
 --------------------------------
@@ -75,6 +75,9 @@ end
 
 function debug_write(output)
     if (type(output) == "table") then
+        if false then -- This is so we don't print out the table if we arent testing
+            return 
+        end
         utils_data.debug_write("Roguelite Manager: "..print_table(output))
     else
         utils_data.debug_write("Roguelite Manager: "..output)

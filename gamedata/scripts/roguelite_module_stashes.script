@@ -361,10 +361,10 @@ local function actor_on_item_put_in_box(box, item)
 end
 
 local function actor_on_stash_remove(data) 
-    if m_data.spawned_stashes and table_has_value(m_data.spawned_stashes, data.stash_id) then
-        data.cancel = true
-        return
-    end
+    --if m_data.spawned_stashes and table_has_value(m_data.spawned_stashes, data.stash_id) then
+    --    data.cancel = true
+    --    return
+    --end
 end
 
 function roguelite_load_state(save_data)
