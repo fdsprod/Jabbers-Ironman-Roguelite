@@ -17,6 +17,7 @@ local m_data = {
     stashes_version = 2,
     stashes = {},
     item_uses_data = {},
+    spawned_stashes = {}
 }
 
 --------------------------------
@@ -42,9 +43,10 @@ end
 local function restore_prior_state_stashes_v1(data)
     local state = alife_storage_manager.get_state()
     
-    if not (state.player_created_stashes) then 
-        state.player_created_stashes = {}
-    end
+    -- Commented out for now, this is causing a crash in 0.9
+    -- if not (state.player_created_stashes) then 
+    --     state.player_created_stashes = {}
+    -- end
 
     for _, stash_data in pairs(data.stashes) do
         if stash_data then
@@ -53,8 +55,11 @@ local function restore_prior_state_stashes_v1(data)
             local pos = vector():set(stash_data.position.x, stash_data.position.y, stash_data.position.z)
             local se_obj = alife_create(stash_data.section, pos, stash_data.level_vertex_id, stash_data.game_vertex_id)
             
-            if se_obj then                
-                state.player_created_stashes[se_obj.id] = stash_data.section        
+            if se_obj then         
+                -- Commented out for now, this is causing a crash in 0.9       
+                --state.player_created_stashes[se_obj.id] = stash_data.section 
+
+                table.insert(m_data.spawned_stashes, se_obj.id)
 
                 if stash_data.angle then
                     se_obj.angle = vector():set(stash_data.angle.x, stash_data.angle.y, stash_data.angle.z)
@@ -261,6 +266,7 @@ local function save_state(data)
     data.roguelite_manager.stashes = m_data.stashes
     data.roguelite_manager.item_uses_data = m_data.item_uses_data
     data.roguelite_manager.money = money
+    data.roguelite_manager.spawned_stashes = m_data.spawned_stashes
 end
 
 local function load_state(data)
@@ -287,17 +293,20 @@ local function load_state(data)
         if  data.roguelite_manager.stashes then
             roguelite_manager.debug_write("Restoring stash data from prior save.")
             m_data.stashes = data.roguelite_manager.stashes
+            m_data.spawned_stashes =  data.roguelite_manager.spawned_stashes
         end
         if  data.roguelite_manager.item_uses_data then
             roguelite_manager.debug_write("Restoring item use data from prior save.")
             m_data.item_uses_data = data.roguelite_manager.item_uses_data
         end
     end
+    
 
     data.roguelite_manager.stashes_version = nil
     data.roguelite_manager.stashes = nil
     data.roguelite_manager.item_uses_data = nil
     data.roguelite_manager.money = nil
+    data.roguelite_manager.spawned_stashes = nil
 end
 
 local function physic_object_on_use_callback(box, who)
@@ -348,6 +357,13 @@ local function actor_on_item_put_in_box(box, item)
     if IsItem("multiuse", item:section()) then
         local uses = utils_item.get_item_remaining_uses(item) or 0
         m_data.item_uses_data[item:id()] = uses
+    end
+end
+
+local function actor_on_stash_remove(data) 
+    if m_data.spawned_stashes and table_has_value(m_data.spawned_stashes, data.stash_id) then
+        data.cancel = true
+        return
     end
 end
 
@@ -430,6 +446,8 @@ function on_game_start()
     RegisterScriptCallback("load_state", load_state)
     RegisterScriptCallback("actor_on_item_put_in_box",actor_on_item_put_in_box)
     RegisterScriptCallback("physic_object_on_use_callback", physic_object_on_use_callback)
+    RegisterScriptCallback("actor_on_stash_remove", actor_on_stash_remove)
+    
 
     roguelite_manager.debug_write("Stash module callbacks registered")
 end
