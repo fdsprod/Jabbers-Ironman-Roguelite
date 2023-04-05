@@ -64,3 +64,4 @@ Simply extract into your S.T.A.L.K.E.R. Anomaly installation folder.
 
 **ACKNOWLEDGEMENTS**
 Big thanks to br4iny for help testing!
+Big thanks to Dr.Pr1nkos for RUS MCM translations!
