@@ -29,7 +29,7 @@
 --]]
 
 local config = {
-    version = "0.83.6",
+    version = "0.83.8",
 }
 
 --------------------------------
@@ -244,18 +244,33 @@ function serialize_item(se_obj)
 end
 
 function restore_item(section, position, level_vertex_id, game_vertex_id, item_data, parent_item_id, state)
-    debug_write("Creating item " .. section .. "...")
+    -- Some modes add quest items that are not marked as quest_item == true...
+    if string.find(section, "strelok") 
+        or string.find(section, "docuuments") 
+        or string.find(section, "intel") 
+        or string.find(section, "quest") 
+        or string.find(section, "notes") 
+        or string.find(section, "instruction")
+        or string.find(section, "good_psy_helmet")
+        or string.find(section, "bad_psy_helmet")
+        or string.find(section, "wpn_binoc_inv") -- For whatever reason this crashes things sometimes.
+        or (string.find(section, "pda") and not string.find(section, "device_pda_1") and not string.find(section, "device_pda_2") and not string.find(section, "device_pda_3")) then
+        debug_write("Not restoring quest item " .. section)
+        return
+    end
+
+    debug_write("Creating item " .. section)
 
     local se_obj = alife_create(section, position, level_vertex_id,game_vertex_id, parent_item_id, state)
 
     if se_obj then    
-        debug_write("Created item " .. se_obj:name())
+        --debug_write("Created item " .. se_obj:name())
 
         if item_data then
             local item_processor = itms_manager.get_item_processor()
 
             if IsWeapon(se_obj) then
-                debug_write("Creating weapon data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
+                --debug_write("Creating weapon data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
 
                 local data = utils_stpk.get_weapon_data(se_obj)
 
@@ -273,7 +288,7 @@ function restore_item(section, position, level_vertex_id, game_vertex_id, item_d
 
                 utils_stpk.set_weapon_data(data, se_obj)
             elseif IsAmmo(se_obj) then
-                debug_write("Creating ammo data for " .. se_obj:name() .. " " .. se_obj.id .. ".")
+                --debug_write("Creating ammo data for " .. se_obj:name() .. " " .. se_obj.id .. ".")
 
                 local data = utils_stpk.get_ammo_data(se_obj)
 
@@ -287,7 +302,7 @@ function restore_item(section, position, level_vertex_id, game_vertex_id, item_d
 
                 utils_stpk.set_ammo_data(data, se_obj)
             else
-                roguelite_manager.debug_write("Creating item data " .. se_obj:name() .. " " .. se_obj.id ..".")
+                --roguelite_manager.debug_write("Creating item data " .. se_obj:name() .. " " .. se_obj.id ..".")
 
                 local data = utils_stpk.get_item_data(se_obj)
 
@@ -304,7 +319,7 @@ function restore_item(section, position, level_vertex_id, game_vertex_id, item_d
             alife():register(se_obj)
 
             if item_data.uses and item_data.uses ~= 0 then
-                roguelite_manager.debug_write("Updating item uses " .. se_obj:name() .. " " .. item_data.uses ..".")
+                --roguelite_manager.debug_write("Updating item uses " .. se_obj:name() .. " " .. item_data.uses ..".")
 
                 item_processor:Process_Item(nil, se_obj.id, {
                     uses = item_data.uses

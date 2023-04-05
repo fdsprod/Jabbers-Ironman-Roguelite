@@ -359,10 +359,10 @@ local function new_create_release_item(npc)
             
             loss_chance = (math.max(tg - min_tg, 0)) / (max_tg - min_tg)
             
-            roguelite_manager.debug_write("tg="..tostring(tg))
-            roguelite_manager.debug_write("min_tg="..tostring(min_tg))
-            roguelite_manager.debug_write("max_tg="..tostring(max_tg))
-            roguelite_manager.debug_write("loss_chance="..tostring(loss_chance))
+            --roguelite_manager.debug_write("tg="..tostring(tg))
+            --roguelite_manager.debug_write("min_tg="..tostring(min_tg))
+            --roguelite_manager.debug_write("max_tg="..tostring(max_tg))
+            --roguelite_manager.debug_write("loss_chance="..tostring(loss_chance))
         
             loss_chance = 100 - ((roguelite_manager_mcm.get_config("drop_player_inventory_item_loss_chance", 0.25) * loss_chance) * 100);
         end
@@ -379,7 +379,7 @@ local function new_create_release_item(npc)
         for _, item_data in pairs(m_data.corpse.items) do
             local section = item_data.section
             local loot_dice_roll = math.random(0, 100)
-            roguelite_manager.debug_write("loot_dice_roll="..tostring(loot_dice_roll).." < "..tostring(loss_chance).." for item "..section)
+            --roguelite_manager.debug_write("loot_dice_roll="..tostring(loot_dice_roll).." < "..tostring(loss_chance).." for item "..section)
             if loot_dice_roll < loss_chance then
                 roguelite_manager.restore_item(section, npc:position(), npc:level_vertex_id(), npc:game_vertex_id(), item_data, npc:id(), false)
             else
