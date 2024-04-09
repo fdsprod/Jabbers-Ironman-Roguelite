@@ -261,9 +261,9 @@ function restore_item(section, position, level_vertex_id, game_vertex_id, item_d
 
     debug_write("Creating item " .. section)
 
-    local se_obj = alife_create(section, position, level_vertex_id,game_vertex_id, parent_item_id, state)
+    local se_obj = alife_create(section, position, level_vertex_id, game_vertex_id, parent_item_id, state)
 
-    if se_obj then    
+    if se_obj then      
         --debug_write("Created item " .. se_obj:name())
 
         if item_data then

@@ -48,7 +48,7 @@ local function restore_prior_state_actor_rep_v2(data)
     local rank = degrade("Rank", db.actor:character_rank(), data.character_rank, roguelite_manager_mcm.get_config("character_rank_penalty_percent", 0.02))
 
     db.actor:set_character_reputation(rept)
-    db.actor:set_character_rank(rept)
+    db.actor:set_character_rank(rank)
 
     game_statistics.actor_miscellaneous.actual_rept = rept
     game_statistics.actor_miscellaneous.actual_rank = rank
