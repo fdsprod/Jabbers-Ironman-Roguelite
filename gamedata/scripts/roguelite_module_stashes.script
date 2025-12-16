@@ -10,6 +10,21 @@ local placeable_containers_section_names = {
     "placeable_blue_box",
     "placeable_exo_repair_kit",
     "placeable_sumka6",
+	"placeable_fridge",
+	"placeable_cans_tuna",
+	"placeable_prop_ammo_box",
+	"placeable_prop_med_case_1",
+	"placeable_stove2_stash",
+	"placeable_arti_display",
+	"placeable_storage01",
+	"placeable_storage02",
+	"placeable_storage03",
+	"placeable_storage04",
+	"placeable_storage05",
+	"placeable_storage06",
+	"placeable_storage07",
+	"placeable_storage08",
+	"placeable_box_paper",
     "workshop_stash"
 }
 

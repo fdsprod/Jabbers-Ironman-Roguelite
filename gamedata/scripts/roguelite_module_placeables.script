@@ -11,7 +11,6 @@ local config = {
 local placeable_objects_section_names = {
     "placeable_radio",
     "placeable_piano",
-	"placeable_fridge",
 	"placeable_clinic_equipments",
 	"placeable_suit",
 	"placeable_rug",
@@ -77,7 +76,6 @@ local placeable_objects_section_names = {
 	"placeable_med_case_1",
 	"placeable_exo_repair_kit_item",
 	"placeable_case_item",
-	"placeable_box_paper",
 	"placeable_documents_1",
 	"placeable_documents_2",
 	"placeable_notes_writing_book",
@@ -106,7 +104,6 @@ local placeable_objects_section_names = {
 	"placeable_psi_helmet",
 	"placeable_stool",
 	"placeable_teapot",
-	"placeable_cans_tuna",
 	"placeable_dish1",
 	"placeable_dish2",
 	"placeable_fan",
@@ -117,14 +114,6 @@ local placeable_objects_section_names = {
 	"placeable_shower",
 	"placeable_sink",
 	"placeable_toilet",
-	"placeable_storage01",
-	"placeable_storage02",
-	"placeable_storage03",
-	"placeable_storage04",
-	"placeable_storage05",
-	"placeable_storage06",
-	"placeable_storage07",
-	"placeable_storage08",
 	"placeable_wooden_plank",
 	"placeable_door",
 	"placeable_door02",
@@ -141,7 +130,6 @@ local placeable_objects_section_names = {
 	"placeable_shield",
 	"placeable_metal_plate",
 	"placeable_wooden_board",
-	"placeable_arti_display",
 }
 
 local m_data = {
