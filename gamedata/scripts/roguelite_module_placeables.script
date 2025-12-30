@@ -166,7 +166,7 @@ local function restore_prior_state_placeables_v1(data)
     end
 end
 
-local function table_has_value (tab, val)
+local function table_has_value(tab, val)
     for index, value in ipairs(tab) do
         if value == val then
             return true

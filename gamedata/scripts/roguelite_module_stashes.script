@@ -403,7 +403,7 @@ end
 
 function append_mcm_options(gr)
     roguelite_manager.debug_write("Appending stash module mcm options.")
-    --Charater Reputation Settings
+    
     table.insert(gr, { id = "line" , type = "line" })
     table.insert(gr, {
         id = "desc_mcm",

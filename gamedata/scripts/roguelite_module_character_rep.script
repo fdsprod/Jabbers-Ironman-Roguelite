@@ -6,18 +6,19 @@
 
 local m_data = {
     character_rep_version = 2,
+    faction_rep_version = 1,
 }
 
 --------------------------------
 -- Private stuff and things
 --------------------------------
-local function degrade(name, current_value, restored_value, percent)
+local function degrade(name, current_value, restored_value, percent, clamp_negative)
     local value = restored_value
-    local loss = value * roguelite_manager_mcm.get_config("character_rep_penalty_percent", 0.02)
+    local loss = value * (percent or 0)
 
     value = value - loss
 
-    if value < 0 then
+    if clamp_negative ~= false and value < 0 then
         value = 0
     end
 
@@ -27,6 +28,75 @@ local function degrade(name, current_value, restored_value, percent)
     end
 
     return value
+end
+
+local faction_names = {}
+
+do
+    local source = _G.factions_table_all
+    if type(source) == "table" then
+        for i = 1, #source do
+            local name = source[i]
+            if name ~= "actor" and name ~= "monster" and name ~= "arena_enemy" and not string.find(name, "actor_", 1, true) then
+                faction_names[#faction_names + 1] = name
+            end
+        end
+    end
+
+    if #faction_names == 0 then
+        faction_names = {"stalker","bandit","csky","dolg","freedom","killer","army","ecolog","monolith","renegade","greh","isg","trader","zombied"}
+    end
+end
+
+local function degrade_faction_goodwill(name, current_value, restored_value, percent)
+    if restored_value == nil then
+        return current_value
+    end
+
+    local value = restored_value
+    local loss = value * percent
+
+    value = value - loss
+
+    if value < current_value then
+        roguelite_manager.debug_write(name.." "..tostring(value).." not set for the player as it is below the starting "..name.." of "..tostring(current_value)..".")
+        return current_value
+    end
+
+    return value
+end
+
+local function restore_prior_state_faction_rep(data)
+    local goodwill = data.faction_goodwill
+
+    if not goodwill then
+        roguelite_manager.debug_write("No faction goodwill was recorded.")
+        return
+    end
+
+    local actor = db.actor
+    if not actor then
+        return
+    end
+
+    local percent = roguelite_manager_mcm.get_config("faction_rep_penalty_percent", 0.02)
+
+    for i = 1, #faction_names do
+        local faction = faction_names[i]
+        local stored_value = goodwill[faction]
+
+        if stored_value ~= nil then
+            local current = actor:community_goodwill(faction)
+            local target = degrade_faction_goodwill("Faction rep ("..faction..")", current, stored_value, percent)
+
+            if target ~= current then
+                actor:set_community_goodwill(faction, target)
+                if relation_registry and relation_registry.set_community_goodwill then
+                    relation_registry.set_community_goodwill(faction, AC_ID, target)
+                end
+            end
+        end
+    end
 end
 
 local function restore_prior_state_actor_rep_v1(data)
@@ -69,12 +139,23 @@ function roguelite_load_state(save_data)
             restore_prior_state_actor_rep_v2(save_data)
         end
     end
+
+    if roguelite_manager_mcm.get_config("is_faction_rep_restore_enabled", true) and save_data.faction_rep_version == m_data.faction_rep_version then
+        restore_prior_state_faction_rep(save_data)
+    end
 end
 
 function roguelite_save_state(save_data)
     save_data.character_rep = db.actor:character_reputation()
     save_data.character_rank = db.actor:character_rank()
     save_data.character_rep_version = m_data.character_rep_version
+    save_data.faction_goodwill = {}
+    save_data.faction_rep_version = m_data.faction_rep_version
+
+    for i = 1, #faction_names do
+        local faction = faction_names[i]
+        save_data.faction_goodwill[faction] = db.actor:community_goodwill(faction)
+    end
 end
 
 function append_mcm_options(gr)
@@ -111,6 +192,21 @@ function append_mcm_options(gr)
         step = 0.02,
         def = 0.02
     })
+    table.insert(gr, {
+        id = "is_faction_rep_restore_enabled",
+        type = "check",
+        val = 1,
+        def = true
+    })
+    table.insert(gr, {
+        id = "faction_rep_penalty_percent",
+        type = "track",
+        val = 2,
+        min = 0,
+        max = 1,
+        step = 0.02,
+        def = 0.02
+    })
 end
 
 function on_option_change()
@@ -119,6 +215,8 @@ function on_option_change()
     roguelite_manager.debug_write("is_character_rep_restore_enabled = "..tostring(get_config("is_character_rep_restore_enabled", true)))
     roguelite_manager.debug_write("character_rep_penalty_percent = "..tostring(get_config("character_rep_penalty_percent", 0.02)))
     roguelite_manager.debug_write("character_rank_penalty_percent = "..tostring(get_config("character_rank_penalty_percent", 0.02)))
+    roguelite_manager.debug_write("is_faction_rep_restore_enabled = "..tostring(get_config("is_faction_rep_restore_enabled", true)))
+    roguelite_manager.debug_write("faction_rep_penalty_percent = "..tostring(get_config("faction_rep_penalty_percent", 0.02)))
 end
 
 function on_game_load()

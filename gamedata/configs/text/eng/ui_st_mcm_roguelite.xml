@@ -82,6 +82,12 @@ The item loss % would be 0.75 * 0.25 since it took you 3/4 of an hour to get to 
     <string id="ui_mcm_roguelite_character_rank_penalty_percent">
         <text>Character rank loss % between playthroughs</text>
     </string>
+    <string id="ui_mcm_roguelite_is_faction_rep_restore_enabled">
+        <text>Restore Faction Rep</text>
+    </string>
+    <string id="ui_mcm_roguelite_faction_rep_penalty_percent">
+        <text>Faction reputation loss % between playthroughs</text>
+    </string>
     
     <string id="ui_mcm_roguelite_debug_description">
         <text>Debug Settings</text>

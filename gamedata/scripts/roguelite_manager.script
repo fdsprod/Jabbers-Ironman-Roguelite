@@ -29,7 +29,7 @@
 --]]
 
 local config = {
-    version = "0.87.0",
+    version = "0.88.0",
 }
 
 --------------------------------
@@ -89,6 +89,7 @@ end
 --------------------------------
 
 local function load_prior_state()
+
     local faction = character_community(db.actor):sub(7)
 
     if not faction then
@@ -240,6 +241,21 @@ function serialize_item(se_obj)
         stash_item_data.custom_data = data.custom_data
     end
 
+    if IsItem("multiuse", section) then
+        local obj = level.object_by_id(se_obj.id)
+
+		if obj then
+            stash_item_data.uses = obj:get_remaining_uses()
+        else
+            debug_write("Unable to find object for multiuse item section:" .. section .. " id:" .. se_obj.id)
+        end
+    end
+
+    local parts_condition = item_parts.get_parts_con(nil, se_obj.id)
+    if parts_condition then
+        stash_item_data.parts_condition = dup_table(parts_condition)
+    end
+
     return stash_item_data;
 end
 
@@ -318,11 +334,15 @@ function restore_item(section, position, level_vertex_id, game_vertex_id, item_d
 
             alife():register(se_obj)
 
+            if item_parts and item_data.parts_condition then
+                item_parts.set_parts_con(se_obj.id, dup_table(item_data.parts_condition))
+            end
+
             if item_data.uses and item_data.uses ~= 0 then
-                --roguelite_manager.debug_write("Updating item uses " .. se_obj:name() .. " " .. item_data.uses ..".")
+                roguelite_manager.debug_write("Updating item uses " .. section .. " " .. item_data.uses ..".")
 
                 item_processor:Process_Item(nil, se_obj.id, {
-                    uses = item_data.uses
+                    uses = item_data.uses                    
                 })
             end
         else 

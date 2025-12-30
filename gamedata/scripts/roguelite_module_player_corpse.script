@@ -50,62 +50,7 @@ local function get_corpse_data()
                 roguelite_manager.debug_write("Found corpse item " .. se_obj:name() .. " " .. se_obj.id ..".")
 
                 local section = se_obj:section_name()
-                local corpse_item_data = {
-                    id = se_obj.id,
-                    name = se_obj:name(),
-                    clsid = get_clsid(se_obj),
-                    section = section
-                }
-
-                if IsWeapon(se_obj) then
-                    roguelite_manager.debug_write("Gathering weapon data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
-                    local data = utils_stpk.get_weapon_data(se_obj)
-
-                    corpse_item_data.ammo_current = data.ammo_current
-                    corpse_item_data.ammo_elapsed = data.ammo_elapsed
-                    corpse_item_data.weapon_state = data.weapon_state
-                    corpse_item_data.addon_flags = data.addon_flags
-                    corpse_item_data.ammo_type = data.ammo_type
-
-                    corpse_item_data.condition = data.condition
-                    corpse_item_data.upgrades = data.upgrades
-
-                    corpse_item_data.visual_name = data.visual_name
-                    corpse_item_data.visual_flags = data.visual_flags
-
-                    corpse_item_data.object_flags = data.object_flags
-                    corpse_item_data.custom_data = data.custom_data
-                elseif IsAmmo(se_obj) then
-                    roguelite_manager.debug_write("Gathering ammo data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
-                    local data = utils_stpk.get_ammo_data(se_obj)
-
-                    corpse_item_data.condition = data.condition
-                    corpse_item_data.upgrades = data.upgrades
-
-                    corpse_item_data.visual_name = data.visual_name
-                    corpse_item_data.visual_flags = data.visual_flags
-
-                    corpse_item_data.object_flags = data.object_flags
-                    corpse_item_data.custom_data = data.custom_data
-
-                    corpse_item_data.ammo_left = data.ammo_left
-                else
-                    roguelite_manager.debug_write("Gathering item data " .. se_obj:name() .. " " ..se_obj.id .. ".")
-                    local data = utils_stpk.get_item_data(se_obj)
-
-                    corpse_item_data.condition = data.condition
-                    corpse_item_data.upgrades = data.upgrades
-
-                    corpse_item_data.visual_name = data.visual_name
-                    corpse_item_data.visual_flags = data.visual_flags
-
-                    corpse_item_data.object_flags = data.object_flags
-                    corpse_item_data.custom_data = data.custom_data
-
-                    if IsItem("multiuse", section) and m_data.item_uses_data[se_obj.id] then
-                        corpse_item_data.uses = m_data.item_uses_data[se_obj.id]
-                    end
-                end
+                local corpse_item_data = roguelite_manager.serialize_item(se_obj)
 
                 corpse_data.items[se_obj.id] = corpse_item_data
 			end
@@ -308,6 +253,8 @@ end
 -- -- END FOR DEBUGGING 
 -- --------------------------------
 
+local install_death_manager_hooks
+
 function on_game_start()
 	RegisterScriptCallback("on_game_load", on_game_load)
     RegisterScriptCallback("save_state", save_state)
@@ -318,9 +265,11 @@ function on_game_start()
     --RegisterScriptCallback("on_key_press", onKeyPress)
 
     roguelite_manager.debug_write("Corpse module callbacks registered")
+
+    install_death_manager_hooks()
 end
 
-local old_keep_item = death_manager.keep_item
+local old_keep_item
 
 local function new_keep_item(npc, item)
     if not m_data.corpse then
@@ -336,7 +285,7 @@ local function new_keep_item(npc, item)
 end
 
 
-local old_create_release_item = death_manager.create_release_item
+local old_create_release_item
 local function new_create_release_item(npc)
     roguelite_manager.debug_write("new_create_release_item npc.id(" .. tostring(npc:id()) .. ")")
 
@@ -371,7 +320,13 @@ local function new_create_release_item(npc)
 
         -- Delete all items since we will recreate
 		local function release_actor_item(temp, item)
-			alife_release_id(item:id())
+			local sec = item:section()
+			roguelite_manager.debug_write("Releasing item " .. sec .. " id(" .. tostring(item:id()) .. ")")
+            
+            local se_item = alife_object(item:id())
+            if se_item then
+			    alife_release(item)
+            end
 		end
 
 		npc:iterate_inventory(release_actor_item,nil)
@@ -391,8 +346,17 @@ local function new_create_release_item(npc)
     end    
 end
 
-death_manager.keep_item = new_keep_item
-death_manager.create_release_item = new_create_release_item
+install_death_manager_hooks = function()
+    if death_manager.keep_item ~= new_keep_item then
+        old_keep_item = death_manager.keep_item or empty_function
+        death_manager.keep_item = new_keep_item
+    end
+
+    if death_manager.create_release_item ~= new_create_release_item then
+        old_create_release_item = death_manager.create_release_item or empty_function
+        death_manager.create_release_item = new_create_release_item
+    end
+end
 
 
 
