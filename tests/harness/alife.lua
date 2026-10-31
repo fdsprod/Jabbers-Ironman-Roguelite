@@ -691,7 +691,12 @@ function M.install(env)
 
     -- Mirrors _g.script:2071-2146: the state argument selects the overload.
     env.alife_create = function(section, pos, lid, gid, id, state)
-        if not env.ini_sys:section_exist(section) then return nil end
+        -- _g.script:2115-2118. An undefined section logs an error and spawns nothing.
+        if not env.ini_sys:section_exist(section) then
+            env.callstack()
+            env.printe("!ERROR: alife_create | section [%s] is invalid!", section)
+            return nil
+        end
         if state ~= nil then return M.sim:create(section, pos, lid, gid, id, state) end
         return M.sim:create(section, pos, lid, gid, id)
     end

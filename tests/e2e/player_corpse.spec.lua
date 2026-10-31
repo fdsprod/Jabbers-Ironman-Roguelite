@@ -126,6 +126,71 @@ describe("the player corpse", function()
         end)
     end)
 
+    -- FIXES: the mod protected the body by planting sl_ht_walkie_talkie, a quest item
+    -- from the New Storylines mod. Without that mod alife_create logs an error and
+    -- nothing protects the body. With it, the first opening releases the item, so
+    -- protection ends there. Stock skips a body with dont_release set when it queues
+    -- bodies for cleanup (release_body_manager.script:105). There is no recheck like
+    -- the quest item one at :174, so the var has to be set before the body goes online.
+    describe("the body cleanup exemption", function()
+        local function next_life()
+            model.give(db.actor, "medkit")
+            H.die()
+            H.new_life{ modules = MODULES }
+            pin_roll(function(a) return a end)
+            model.set_mcm("drop_player_inventory_item_loss_max_ingame_time_enabled", false)
+            model.set_mcm("drop_player_inventory_item_loss_chance", 0)
+        end
+
+        -- The check stock makes, through the server object so it works while offline.
+        local function exempt(id)
+            return se_load_var(id, model.server(id):name(), "dont_release")
+        end
+
+        describe("given a game where sl_ht_walkie_talkie is not defined", function()
+            -- Removed before next_life, or the new life would define it again.
+            beforeEach(function()
+                H.sections.sl_ht_walkie_talkie = nil
+                H.fakes.ltx.sl_ht_walkie_talkie = nil
+                next_life()
+                expect(ini_sys:section_exist("sl_ht_walkie_talkie")).toBe(false)
+                expect(#model.all_stashes("stalker_azazel")).toBe(1)
+            end)
+
+            it("exempts the body as soon as the new life starts", function()
+                local se = model.all_stashes("stalker_azazel")[1]
+                expect(se.online).toBe(false)
+                expect(exempt(se.id)).toBeTruthy()
+            end)
+
+            it("still exempts the body after it is opened and the gear restored", function()
+                local corpse = reach_corpse()
+                player_opens(corpse)
+                expect(sections_on(corpse:id())).toEqual({ "medkit" })
+                expect(exempt(corpse:id())).toBeTruthy()
+            end)
+
+            it("logs no error when spawning the body", function()
+                expect(H.fakes.call_count("printe")).toBe(0)
+            end)
+        end)
+
+        describe("given a game where sl_ht_walkie_talkie is defined", function()
+            beforeEach(function()
+                next_life()
+                expect(ini_sys:section_exist("sl_ht_walkie_talkie")).toBe(true)
+                expect(#model.all_stashes("stalker_azazel")).toBe(1)
+            end)
+
+            -- Counted across the world, because sections_on filters this section out.
+            it("does not plant it on the body", function()
+                expect(#model.all_stashes("sl_ht_walkie_talkie")).toBe(0)
+                player_opens(reach_corpse())
+                expect(#model.all_stashes("sl_ht_walkie_talkie")).toBe(0)
+            end)
+        end)
+    end)
+
     describe("the item loss roll", function()
         -- 100 items would be slower and prove no more than one, since the roll is per item.
         local function die_and_open_after(seconds)
