@@ -6,105 +6,197 @@
 
 local m_data = {
     trader_rep_version = 1,
-    trader_rep = {}
+    -- The last rep known for each trader, by name. This is what goes in the state file.
+    trader_rep = {},
+    -- Values from the last life, penalty taken, waiting for the trader to come online.
+    trader_rep_pending = {}
 }
+
+-- AI_TRD_S, bound by bind_trader: not in db.OnlineStalkers, and no net callbacks.
+local story_traders = { "esc_m_trader", "red_forester_tech" }
+local story_unseen = {}
+
+for i=1, #story_traders do
+    story_unseen[story_traders[i]] = true
+end
 
 --------------------------------
 -- Private stuff and things
 --------------------------------
 
-local function update_character_rep(data, npc)
-    local rept = data.trader_rep[npc:character_name()]
+local function is_friendly_trader(npc)
+    -- is_trader indexes db.storage[id] unchecked, and one NPC must not cost the others their rep.
+    local ok, is_trader = pcall(utils_obj.is_trader, npc)
+    -- db.actor is nil while a level is coming down, and relation raises on nil.
+    return ok and is_trader and IsStalker(npc) and npc:alive() and db.actor and npc:relation(db.actor) ~= game_object.enemy
+end
+
+local function get_story_trader(story_id)
+    local id = story_objects.object_id_by_story_id[story_id]
+    return id and db.storage[id] and db.storage[id].object
+end
+
+local function for_each_online_stalker(func)
+	for i=1, #db.OnlineStalkers do
+		local npc = db.storage[db.OnlineStalkers[i]]
+		npc = npc and npc.object or level.object_by_id(db.OnlineStalkers[i])
+		if npc then
+			func(npc)
+		end
+	end
+end
+
+-- Clears the value either way, so rep the player loses later is never overwritten.
+local function apply_pending(npc)
+    local name = npc:character_name()
+    local rept = m_data.trader_rep_pending[name]
 
     if not rept then
         return
     end
 
-    local abs_rept = math.abs(rept)
-    local rept_loss = abs_rept * roguelite_manager_mcm.get_config("trader_rep_penalty_percent", 0.02)
-
-    rept = rept - rept_loss
-
-    if rept < -4000 then
-        rept = -4000
-    end
+    m_data.trader_rep_pending[name] = nil
 
     local ncp_rept = npc:character_reputation()
 
     -- Only set the npc rept if it will not go below the new game value
     if rept > ncp_rept then
-        roguelite_manager.debug_write("Updating repuation for trader "..npc:character_name().." to "..tostring(rept)..".")
+        roguelite_manager.debug_write("Updating repuation for trader "..name.." to "..tostring(rept)..".")
         npc:set_character_reputation(rept)
     else
-        roguelite_manager.debug_write("Reputation "..tostring(rept).." not set for trader "..npc:character_name().." as it is below the starting rep of "..tostring(ncp_rept)..".")
+        roguelite_manager.debug_write("Reputation "..tostring(rept).." not set for trader "..name.." as it is below the starting rep of "..tostring(ncp_rept)..".")
+    end
+end
+
+local function apply_pending_online()
+    for_each_online_stalker(function(npc)
+        if m_data.trader_rep_pending[npc:character_name()] and is_friendly_trader(npc) then
+            apply_pending(npc)
+        end
+    end)
+
+    for i=1, #story_traders do
+        local npc = get_story_trader(story_traders[i])
+        if npc then
+            apply_pending(npc)
+        end
     end
 end
 
 local function restore_prior_state_trader_rep_v1(data)
-	for i=1, #db.OnlineStalkers do
-		local npc = db.storage[db.OnlineStalkers[i]]
-		npc = npc and npc.object or level.object_by_id(db.OnlineStalkers[i])
-		if (npc and IsStalker(npc) and npc:alive()) then
-			if utils_obj.is_trader(npc) then
-				if npc:relation(db.actor) ~= game_object.enemy then
-                    if data.trader_rep and data.trader_rep[npc:character_name()] then
-                        update_character_rep(data, npc)
-                    end
-				end
-			end
-		end
-	end
+    for name, rept in pairs(data.trader_rep or {}) do
+        rept = rept - math.abs(rept) * roguelite_manager_mcm.get_config("trader_rep_penalty_percent", 0.02)
 
-    local function update_by_story_id(story_id)
-        local id = story_objects.object_id_by_story_id[story_id]
-        if id then
-            local npc = db.storage[id] and db.storage[id].object
-            if npc then
-                update_character_rep(data, npc)
-            end
+        if rept < -4000 then
+            rept = -4000
         end
+
+        -- The engine stores an int, so keep what it would keep.
+        rept = rept >= 0 and math.floor(rept) or math.ceil(rept)
+
+        m_data.trader_rep[name] = rept
+        m_data.trader_rep_pending[name] = rept
     end
 
-    update_by_story_id("esc_m_trader")
-    update_by_story_id("red_tech_forester")
+    apply_pending_online()
+end
+
+-- A value still pending stays as it is, since the rep on the trader is only the new game's.
+local function remember_trader(npc)
+    local name = npc:character_name()
+
+    if m_data.trader_rep_pending[name] then
+        return
+    end
+
+    local contacts = alife_storage_manager.get_state().actor_contacts
+
+    if contacts and contacts[npc:id()] and is_friendly_trader(npc) then
+        local rep = npc:character_reputation()
+        roguelite_manager.debug_write("Storing trader "..name.." with rep "..tostring(rep)..".")
+        m_data.trader_rep[name] = rep
+    end
 end
 
 local function get_player_trader_rep()
-    local alife_state = alife_storage_manager.get_state()
-    local trader_rep = {}
+    for_each_online_stalker(remember_trader)
 
-	for i=1, #db.OnlineStalkers do
-		local npc = db.storage[db.OnlineStalkers[i]]
-		npc = npc and npc.object or level.object_by_id(db.OnlineStalkers[i])
-		if (npc and IsStalker(npc) and npc:alive()) then
-			if utils_obj.is_trader(npc) then
-				if npc:relation(db.actor) ~= game_object.enemy then
-                    if (alife_state.actor_contacts and alife_state.actor_contacts[db.OnlineStalkers[i]]) then
-                        local rep = npc:character_reputation()
-                        roguelite_manager.debug_write("Storing trader "..npc:character_name().." with rep "..tostring(rep)..".")
-					    trader_rep[npc:character_name()] = rep
-                    end
-				end
-			end
-		end
-	end
-
-    local function add_by_story_id(story_id)
-        local id = story_objects.object_id_by_story_id[story_id]
-        if id then
-            local npc = db.storage[id] and db.storage[id].object
-            if npc then
-                local rep = npc:character_reputation()
-                roguelite_manager.debug_write("Storing trader "..npc:character_name().." with rep "..tostring(rep)..".")
-                trader_rep[npc:character_name()] = rep
-            end
+    -- Nothing says a story trader left, but the server object has their rep, online or not.
+    for i=1, #story_traders do
+        local id = story_objects.object_id_by_story_id[story_traders[i]]
+        local se_obj = id and alife_object(id)
+        if se_obj and not m_data.trader_rep_pending[se_obj:character_name()] then
+            local rep = se_obj:reputation()
+            roguelite_manager.debug_write("Storing trader "..se_obj:character_name().." with rep "..tostring(rep)..".")
+            m_data.trader_rep[se_obj:character_name()] = rep
         end
     end
 
-    add_by_story_id("esc_m_trader")
-    add_by_story_id("red_tech_forester")
+    return m_data.trader_rep
+end
 
-    return trader_rep
+local function npc_on_net_spawn(npc)
+    if m_data.trader_rep_pending[npc:character_name()] and is_friendly_trader(npc) then
+        apply_pending(npc)
+    end
+end
+
+local function npc_on_net_destroy(npc)
+    if db.actor then
+        remember_trader(npc)
+    end
+end
+
+-- Story traders send no net_spawn, so look for them. Pending only shrinks after the
+-- restore, so each needs handling once, and this is nothing once both have been seen.
+local function actor_on_update()
+    if not (next(story_unseen) and next(m_data.trader_rep_pending)) then
+        return
+    end
+
+    for story_id in pairs(story_unseen) do
+        local npc = get_story_trader(story_id)
+        if npc then
+            story_unseen[story_id] = nil
+            apply_pending(npc)
+        end
+    end
+end
+
+-- An NPC can spawn before the actor exists, so catch anyone net_spawn could not apply to.
+local function actor_on_first_update()
+    apply_pending_online()
+end
+
+local function save_state(data)
+    if not IsHardcoreMode() then
+        return
+    end
+
+    if not data.roguelite_manager then
+        data.roguelite_manager = {}
+    end
+
+    get_player_trader_rep()
+
+    data.roguelite_manager.trader_rep = m_data.trader_rep
+    data.roguelite_manager.trader_rep_pending = m_data.trader_rep_pending
+end
+
+local function load_state(data)
+    if not IsHardcoreMode() then
+        return
+    end
+
+    if not data.roguelite_manager then
+        return
+    end
+
+    m_data.trader_rep = data.roguelite_manager.trader_rep or m_data.trader_rep
+    m_data.trader_rep_pending = data.roguelite_manager.trader_rep_pending or m_data.trader_rep_pending
+
+    data.roguelite_manager.trader_rep = nil
+    data.roguelite_manager.trader_rep_pending = nil
 end
 
 --------------------------------
@@ -165,6 +257,12 @@ end
 
 function on_game_start()
 	RegisterScriptCallback("on_game_load", on_game_load)
+	RegisterScriptCallback("save_state", save_state)
+	RegisterScriptCallback("load_state", load_state)
+	RegisterScriptCallback("npc_on_net_spawn", npc_on_net_spawn)
+	RegisterScriptCallback("npc_on_net_destroy", npc_on_net_destroy)
+	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
+	RegisterScriptCallback("actor_on_update", actor_on_update)
 end
 
 
