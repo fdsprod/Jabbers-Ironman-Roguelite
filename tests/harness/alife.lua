@@ -245,6 +245,21 @@ local function stalker_leaves(obj, rec)
     end
 end
 
+-- trader_object_binder, for class AI_TRD_S sections (m_person.ltx:4-12, :100). In net_spawn
+-- db.add_obj sets .object, and only a live one gets it (bind_trader.script:24, :57-65).
+-- db.add_obj adds only clsid.script_stalker to db.OnlineStalkers (db.script:72), and this
+-- binder sends no callback at all, so nothing tells a script this NPC came or went.
+local function script_trader_appears(obj, rec)
+    _G.db.storage[rec.id] = { ini = rec._ini, section_logic = rec._section_logic }
+    if not rec.dead then _G.db.storage[rec.id].object = obj end
+end
+
+-- bind_trader.script:96-98.
+local function script_trader_leaves(rec)
+    _G.db.storage[rec.id] = nil
+    _G.alife_storage_manager.get_state().game_object[rec.id] = nil
+end
+
 local function make_client(rec)
     local def = fakes.ltx[rec.section] or {}
     local max = def.max_uses or 1
@@ -295,7 +310,7 @@ local function make_client(rec)
     end
     function obj:bind_object(binder) self._binder = binder end
 
-    if rec._kind == "stalker" then add_stalker_surface(obj, rec) end
+    if rec._kind == "stalker" or rec._kind == "script_trader" then add_stalker_surface(obj, rec) end
 
     clients[rec.id] = obj
     rec.online = true
@@ -304,6 +319,7 @@ local function make_client(rec)
         _G.bind_item.bind(obj)
     end
     if rec._kind == "stalker" then stalker_appears(obj, rec) end
+    if rec._kind == "script_trader" then script_trader_appears(obj, rec) end
     return obj
 end
 
@@ -388,6 +404,7 @@ function M.set_online(id, online)
     else
         rec.online = false
         if rec._kind == "stalker" and clients[id] then stalker_leaves(clients[id], rec) end
+        if rec._kind == "script_trader" and clients[id] then script_trader_leaves(rec) end
         clients[id] = nil
         for _, child in ipairs(children_of(id)) do
             child.online = false
@@ -403,7 +420,7 @@ end
 function M.stalker(opts)
     opts = opts or {}
     local rec = new_record(opts.section or "sim_default_stalker")
-    rec._kind = "stalker"
+    rec._kind = opts._kind or "stalker"
     rec.registered = true
     rec._character_name = opts.name
     rec._community = opts.community or "stalker"
@@ -425,6 +442,20 @@ function M.trader(opts)
     opts = opts or {}
     local copy = {}
     for k, v in pairs(opts) do copy[k] = v end
+    copy.community = opts.community or "trader"
+    return M.stalker(copy)
+end
+
+--- Sidorovich or the Forester: class AI_TRD_S, bound by bind_trader, not a stalker. Same
+--- opts as M.stalker. The client has the same rep methods, because CAI_Trader is a
+--- CInventoryOwner (ai_trader.h:25-26) and se_trader a cse_alife_trader
+--- (se_stalker.script:148). Stock story ids are esc_m_trader and red_forester_tech (all.spawn).
+function M.script_trader(opts)
+    opts = opts or {}
+    local copy = {}
+    for k, v in pairs(opts) do copy[k] = v end
+    copy._kind = "script_trader"
+    copy.section = opts.section or "m_trader"
     copy.community = opts.community or "trader"
     return M.stalker(copy)
 end
@@ -574,6 +605,13 @@ local function install_engine_surface(env)
         trader         = fakes.clsid_for("trader"),
     }
     env.game_object = RELATION
+    -- _g.script:2922-2927
+    env.IsTrader = function(o, c)
+        if not (c) then
+            c = o and o:clsid()
+        end
+        return c and (c == env.clsid.script_trader or c == env.clsid.trader) or false
+    end
 
     -- story_objects.script:3-14. A story id is known while its object is offline.
     env.story_objects = { object_id_by_story_id = {}, story_id_by_object_id = {} }

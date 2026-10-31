@@ -224,6 +224,143 @@ describe("harness/alife NPCs", function()
         end)
     end)
 
+    -- bind_trader.script, db.script:72
+    describe("an NPC bound by bind_trader", function()
+        local function trader_at(rep)
+            return model.script_trader{ name = "Sidorovich", rep = rep, story_id = "esc_m_trader" }
+        end
+
+        it("is in db.storage with its object, while online", function()
+            local id = trader_at()
+            expect(db.storage[id].object).toBe(level.object_by_id(id))
+        end)
+
+        it("is reachable through story_objects, online or not", function()
+            local id = trader_at()
+            expect(story_objects.object_id_by_story_id.esc_m_trader).toBe(id)
+            model.set_online(id, false)
+            expect(story_objects.object_id_by_story_id.esc_m_trader).toBe(id)
+        end)
+
+        it("is not in db.OnlineStalkers", function()
+            trader_at()
+            expect(db.OnlineStalkers).toEqual({})
+        end)
+
+        it("sends neither net callback", function()
+            local id = trader_at()
+            model.set_online(id, false)
+            model.set_online(id, true)
+            H.frames(1)
+            expect(#sends("npc_on_net_spawn")).toBe(0)
+            expect(#sends("npc_on_net_destroy")).toBe(0)
+        end)
+
+        it("leaves db.storage when offline, and returns", function()
+            local id = trader_at()
+            model.set_online(id, false)
+            expect(db.storage[id]).toBeNil()
+            expect(level.object_by_id(id)).toBeNil()
+            model.set_online(id, true)
+            H.frames(1)
+            expect(db.storage[id].object).toBe(level.object_by_id(id))
+        end)
+
+        -- bind_trader.script:57-59
+        it("has no object in db.storage once dead", function()
+            local id = model.script_trader{ online = false }
+            alife():object(id):kill()
+            model.set_online(id, true)
+            H.frames(1)
+            expect(db.storage[id]).toBeDefined()
+            expect(db.storage[id].object).toBeNil()
+        end)
+
+        it("is a trader and not a stalker to the predicates", function()
+            local npc = level.object_by_id(trader_at())
+            expect(IsStalker(npc)).toBe(false)
+            expect(IsTrader(npc)).toBe(true)
+            expect(utils_obj.is_trader(npc)).toBe(true)
+        end)
+
+        it("is a trader by class even with no trader in its section", function()
+            local id = model.script_trader{ section = "m_lesnik", community = "stalker" }
+            expect(utils_obj.is_trader(level.object_by_id(id))).toBe(true)
+        end)
+
+        it("writes rep through, and a new client reads it back", function()
+            local id = trader_at(10)
+            level.object_by_id(id):set_character_reputation(450)
+            expect(alife():object(id):reputation()).toBe(450)
+            model.set_online(id, false)
+            model.set_online(id, true)
+            H.frames(1)
+            expect(level.object_by_id(id):character_reputation()).toBe(450)
+        end)
+
+        it("comes back after a save and reload, with its story id", function()
+            local id = trader_at(80)
+            H.save()
+            H.reload()
+            expect(story_objects.object_id_by_story_id.esc_m_trader).toBe(id)
+            H.frames(1)
+            expect(db.storage[id].object:character_reputation()).toBe(80)
+            expect(db.OnlineStalkers).toEqual({})
+        end)
+    end)
+
+    describe("the actor binder's callbacks", function()
+        -- bind_stalker_ext.script:104
+        it("sends actor_on_update each frame", function()
+            H.frames(3)
+            expect(#sends("actor_on_update")).toBe(3)
+        end)
+
+        -- bind_stalker.script:58 then :218
+        it("sends on_game_load on a reload, after load_state", function()
+            local order = {}
+            H.save()
+            local real = H.boot_game
+            H.boot_game = function(opts)
+                real(opts)
+                RegisterScriptCallback("load_state", function() order[#order + 1] = "load_state" end)
+                RegisterScriptCallback("on_game_load", function() order[#order + 1] = "on_game_load" end)
+            end
+            H.reload()
+            H.boot_game = real
+            expect(order).toEqual({ "load_state", "on_game_load" })
+        end)
+
+        it("sends actor_on_first_update once, on the first frame after a reload", function()
+            H.save()
+            H.reload()
+            expect(#sends("actor_on_first_update")).toBe(0)
+            H.frames(3)
+            expect(#sends("actor_on_first_update")).toBe(1)
+        end)
+
+        it("has an online NPC's client by the first update after a reload", function()
+            local id = model.trader{ name = "Owl" }
+            H.save()
+            H.reload()
+            local seen
+            RegisterScriptCallback("actor_on_first_update", function() seen = level.object_by_id(id) end)
+            H.frames(1)
+            expect(seen).toBeDefined()
+        end)
+
+        it("sends on_game_load in a new life, before the first update", function()
+            local order = {}
+            H.new_life{
+                before_first_update = function()
+                    RegisterScriptCallback("on_game_load", function() order[#order + 1] = "on_game_load" end)
+                    RegisterScriptCallback("actor_on_first_update", function() order[#order + 1] = "first_update" end)
+                end,
+            }
+            expect(order).toEqual({ "on_game_load", "first_update" })
+        end)
+    end)
+
     describe("H.new_life()", function()
         it("builds the world before the first update", function()
             local order = {}

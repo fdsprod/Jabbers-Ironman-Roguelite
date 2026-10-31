@@ -26,8 +26,9 @@ describe("trader reputation", function()
             modules = MODULES,
             before_first_update = function()
                 if opts.setup then opts.setup() end
-                id = model.trader{
+                id = (opts.make or model.trader){
                     name = opts.name or NAME,
+                    section = opts.section,
                     rep = opts.rep or 0,
                     online = opts.online,
                     story_id = opts.story_id,
@@ -315,6 +316,99 @@ describe("trader reputation", function()
             next_life()
             H.die()
             expect(model.rep_of(next_life())).toBeCloseTo(4802)
+        end)
+    end)
+
+    -- Sidorovich (esc_m_trader) is section m_trader in all.spawn, class AI_TRD_S, bound by
+    -- bind_trader (m_person.ltx:4-12). So he is not in db.OnlineStalkers (db.script:72) and
+    -- no net callback says he came or went. The module's story path reads him at death and
+    -- at the first update only.
+    describe("given a story trader", function()
+        local STORY = "esc_m_trader"
+        local FEW_FRAMES = 5
+
+        local function sidorovich(rep)
+            return model.script_trader{ name = NAME, rep = rep, story_id = STORY }
+        end
+
+        local function story_life(opts)
+            opts = opts or {}
+            opts.make = model.script_trader
+            opts.story_id = STORY
+            return next_life(opts)
+        end
+
+        local function story_arrives(id)
+            model.set_online(id, true)
+            H.frames(FEW_FRAMES)
+        end
+
+        it("keeps their rep when online at death and at the restore", function()
+            sidorovich(1000)
+            H.die()
+            expect(model.rep_of(story_life())).toBeCloseTo(980)
+        end)
+
+        -- FIXES: restored only if online at the first update.
+        it("gets the value within a few frames of coming online", function()
+            sidorovich(1000)
+            H.die()
+            local id = story_life{ online = false }
+            story_arrives(id)
+            expect(model.rep_of(id)).toBeCloseTo(980)
+        end)
+
+        it("still gets the value after a save and reload before coming online", function()
+            sidorovich(1000)
+            H.die()
+            local id = story_life{ online = false }
+            H.save()
+            H.reload()
+            H.frames(1)
+            story_arrives(id)
+            expect(model.rep_of(id)).toBeCloseTo(980)
+        end)
+
+        -- FIXES: stored only if online at death, and nothing marks them leaving.
+        it("keeps a changed rep after going offline before death", function()
+            local id = sidorovich(1000)
+            set_rep(id, 5000)
+            H.frames(1)
+            leave(id)
+            H.die()
+            expect(model.rep_of(story_life())).toBeCloseTo(4900)
+        end)
+
+        it("does not get an applied value again when they go offline and back", function()
+            sidorovich(1000)
+            H.die()
+            local id = story_life{ online = false }
+            story_arrives(id)
+            expect(model.rep_of(id)).toBeCloseTo(980)
+            set_rep(id, 500)
+            leave(id)
+            story_arrives(id)
+            expect(model.rep_of(id)).toBeCloseTo(500)
+        end)
+
+        it("reaches the next life with one penalty per life, after staying offline for one", function()
+            sidorovich(5000)
+            H.die()
+            story_life{ online = false }
+            H.frames(FEW_FRAMES)
+            H.die()
+            local id = story_life{ online = false }
+            story_arrives(id)
+            expect(model.rep_of(id)).toBeCloseTo(4802)
+        end)
+
+        -- FIXES: the module asks for "red_tech_forester", which no stock object has.
+        -- all.spawn gives red_m_lesnik, section m_lesnik, story id red_forester_tech.
+        it("keeps the Forester's rep, under the story id he really has", function()
+            model.script_trader{ name = NAME, section = "m_lesnik", rep = 1000, story_id = "red_forester_tech" }
+            H.die()
+            local id = next_life{ make = model.script_trader, section = "m_lesnik", story_id = "red_forester_tech" }
+            expect(model.rep_of(id)).toBeCloseTo(980)
         end)
     end)
 
