@@ -223,16 +223,22 @@ local function add_stalker_surface(obj, rec)
     function obj:set_character_reputation(v)
         rec._reputation = v >= 0 and math.floor(v) or math.ceil(v)
     end
-    function obj:relation(_) return rec._relation or RELATION.neutral end
+    -- A nil is a null deref in the engine (script_game_object_use.cpp:147), so a crash
+    -- and not an error. It raises here to stay visible.
+    function obj:relation(who)
+        if who == nil then error("relation: who is nil") end
+        return rec._relation or RELATION.neutral
+    end
     function obj:alive() return not rec.dead end
 end
 
 -- motivator_binder: db.storage in reinit (xr_motivator.script:40), then in net_spawn
--- db.add_obj (:93, db.script:70-76) and the callback (:182).
+-- db.add_obj (:93, db.script:70-76) and the callback (:182). A corpse returns before the
+-- callback (:94-117).
 local function stalker_appears(obj, rec)
     _G.db.storage[rec.id] = { object = obj, ini = rec._ini, section_logic = rec._section_logic }
     _G.db.OnlineStalkers[#_G.db.OnlineStalkers + 1] = rec.id
-    _G.SendScriptCallback("npc_on_net_spawn", obj, rec.proxy)
+    if not rec.dead then _G.SendScriptCallback("npc_on_net_spawn", obj, rec.proxy) end
 end
 
 -- motivator_binder:net_destroy: the callback (xr_motivator.script:226) comes before
@@ -247,7 +253,7 @@ end
 
 -- trader_object_binder, for class AI_TRD_S sections (m_person.ltx:4-12, :100). In net_spawn
 -- db.add_obj sets .object, and only a live one gets it (bind_trader.script:24, :57-65).
--- db.add_obj adds only clsid.script_stalker to db.OnlineStalkers (db.script:72), and this
+-- db.add_obj adds only clsid.script_stalker to db.OnlineStalkers (db.script:73), and this
 -- binder sends no callback at all, so nothing tells a script this NPC came or went.
 local function script_trader_appears(obj, rec)
     _G.db.storage[rec.id] = { ini = rec._ini, section_logic = rec._section_logic }
@@ -472,6 +478,9 @@ function M.meet(id)
     end
     m_data.actor_contacts[id] = true
 end
+
+--- How the NPC stands with the actor from now on. A game_object.relation value.
+function M.set_relation(id, relation) records[id]._relation = relation end
 
 --- An online NPC with no db.storage entry, which makes is_trader raise. It stays in
 --- db.OnlineStalkers.

@@ -224,7 +224,7 @@ describe("harness/alife NPCs", function()
         end)
     end)
 
-    -- bind_trader.script, db.script:72
+    -- bind_trader.script, db.script:73
     describe("an NPC bound by bind_trader", function()
         local function trader_at(rep)
             return model.script_trader{ name = "Sidorovich", rep = rep, story_id = "esc_m_trader" }

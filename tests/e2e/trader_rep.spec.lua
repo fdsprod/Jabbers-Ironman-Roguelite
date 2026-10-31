@@ -31,6 +31,7 @@ describe("trader reputation", function()
                     section = opts.section,
                     rep = opts.rep or 0,
                     online = opts.online,
+                    relation = opts.relation,
                     story_id = opts.story_id,
                 }
             end,
@@ -320,9 +321,8 @@ describe("trader reputation", function()
     end)
 
     -- Sidorovich (esc_m_trader) is section m_trader in all.spawn, class AI_TRD_S, bound by
-    -- bind_trader (m_person.ltx:4-12). So he is not in db.OnlineStalkers (db.script:72) and
-    -- no net callback says he came or went. The module's story path reads him at death and
-    -- at the first update only.
+    -- bind_trader (m_person.ltx:4-12). So he is not in db.OnlineStalkers (db.script:73) and
+    -- no net callback says he came or went.
     describe("given a story trader", function()
         local STORY = "esc_m_trader"
         local FEW_FRAMES = 5
@@ -432,6 +432,365 @@ describe("trader reputation", function()
             met_trader(NAME, 1000)
             H.die()
             expect(model.rep_of(next_life{ setup = broken_npc })).toBeCloseTo(980)
+        end)
+
+        -- The two above never reach is_trader: the broken NPC is unmet and has nothing
+        -- pending. These two do.
+        it("still saves the other trader's rep when the broken NPC is one the player met", function()
+            local id = model.stalker{ name = "Broken" }
+            model.meet(id)
+            model.drop_storage(id)
+            met_trader(NAME, 1000)
+            H.die()
+            expect(model.rep_of(next_life())).toBeCloseTo(980)
+        end)
+
+        it("still restores the other trader's rep when the broken NPC has a value waiting", function()
+            met_trader("Broken", 500)
+            met_trader(NAME, 1000)
+            H.die()
+            local id = next_life{
+                setup = function() model.drop_storage(model.stalker{ name = "Broken" }) end,
+            }
+            expect(model.rep_of(id)).toBeCloseTo(980)
+        end)
+
+        -- is_trader answers from the community before it reaches db.storage, and the loop
+        -- falls back to level.object_by_id for this NPC.
+        it("still stores a met trader who is the one with no entry", function()
+            model.drop_storage(met_trader(NAME, 1000))
+            H.die()
+            expect(model.rep_of(next_life())).toBeCloseTo(980)
+        end)
+    end)
+
+    -- The design keys by name, so who may receive a value is all that stands between it
+    -- and any other NPC called the same.
+    describe("given a stalker who is not a trader, with a trader's name", function()
+        beforeEach(function()
+            met_trader(NAME, 1000)
+            H.die()
+        end)
+
+        it("does not take the value at the restore", function()
+            expect(model.rep_of(next_life{ make = model.stalker })).toBeCloseTo(0)
+        end)
+
+        it("does not take the value when they come online", function()
+            local id = next_life{ make = model.stalker, online = false }
+            arrive(id)
+            expect(model.rep_of(id)).toBeCloseTo(0)
+        end)
+
+        it("leaves the value for the trader", function()
+            local trader
+            local id = next_life{
+                make = model.stalker,
+                setup = function() trader = model.trader{ name = NAME, online = false } end,
+            }
+            arrive(trader)
+            expect(model.rep_of(id)).toBeCloseTo(0)
+            expect(model.rep_of(trader)).toBeCloseTo(980)
+        end)
+    end)
+
+    describe("given a trader hostile to the player", function()
+        local function turn_hostile(id) model.set_relation(id, game_object.enemy) end
+        local function make_peace(id) model.set_relation(id, game_object.neutral) end
+
+        it("is not stored when hostile at death", function()
+            turn_hostile(met_trader(NAME, 1000))
+            H.die()
+            expect(model.rep_of(next_life())).toBeCloseTo(0)
+        end)
+
+        it("keeps the value known before they turned hostile", function()
+            local id = met_trader(NAME, 1000)
+            H.save()
+            set_rep(id, 5000)
+            turn_hostile(id)
+            H.die()
+            expect(model.rep_of(next_life())).toBeCloseTo(980)
+        end)
+
+        it("does not store them when they leave hostile", function()
+            local id = met_trader(NAME, 1000)
+            turn_hostile(id)
+            leave(id)
+            H.die()
+            expect(model.rep_of(next_life())).toBeCloseTo(0)
+        end)
+
+        describe("at the restore", function()
+            beforeEach(function()
+                met_trader(NAME, 1000)
+                H.die()
+            end)
+
+            it("does not give them the value while online and hostile", function()
+                local id = next_life{ relation = game_object.enemy }
+                expect(model.rep_of(id)).toBeCloseTo(0)
+            end)
+
+            it("does not give them the value when they come online hostile", function()
+                local id = next_life{ online = false, relation = game_object.enemy }
+                arrive(id)
+                expect(model.rep_of(id)).toBeCloseTo(0)
+            end)
+
+            it("gives them the value when they next come online at peace", function()
+                local id = next_life{ relation = game_object.enemy }
+                leave(id)
+                make_peace(id)
+                arrive(id)
+                expect(model.rep_of(id)).toBeCloseTo(980)
+            end)
+
+            it("gives them the value after a load, once at peace", function()
+                local id = next_life{ relation = game_object.enemy }
+                make_peace(id)
+                H.save()
+                H.reload()
+                H.frames(1)
+                expect(model.rep_of(id)).toBeCloseTo(980)
+            end)
+
+            -- Met, online and at peace, but still on the new game's rep: that must not
+            -- replace the value waiting for them.
+            it("still carries the value when met at peace before receiving it", function()
+                local id = next_life{ relation = game_object.enemy }
+                model.meet(id)
+                make_peace(id)
+                H.die()
+                expect(model.rep_of(next_life())).toBeCloseTo(960)
+            end)
+        end)
+    end)
+
+    describe("given a dead trader", function()
+        local function kill(id) alife():object(id):kill() end
+
+        it("keeps the value known before they died", function()
+            local id = met_trader(NAME, 1000)
+            H.save()
+            set_rep(id, 5000)
+            kill(id)
+            H.die()
+            expect(model.rep_of(next_life())).toBeCloseTo(980)
+        end)
+
+        it("does not store one first seen dead at death", function()
+            kill(met_trader(NAME, 1000))
+            H.die()
+            expect(model.rep_of(next_life())).toBeCloseTo(0)
+        end)
+
+        describe("at the restore", function()
+            local function dead_trader(opts)
+                local id = model.trader(opts)
+                kill(id)
+                return id
+            end
+
+            beforeEach(function()
+                met_trader(NAME, 1000)
+                H.die()
+            end)
+
+            it("does not give the value to the corpse", function()
+                expect(model.rep_of(next_life{ make = dead_trader })).toBeCloseTo(0)
+            end)
+
+            it("keeps the value for the next life", function()
+                next_life{ make = dead_trader }
+                H.die()
+                expect(model.rep_of(next_life())).toBeCloseTo(960)
+            end)
+        end)
+    end)
+
+    -- db.del_actor clears db.actor in the actor's net_destroy (bind_stalker.script:84,
+    -- db.script:108-112), so an NPC destroyed after that sees nil. GUESS: which of the
+    -- actor and an NPC comes first, on the way down and on the way up.
+    describe("given no db.actor", function()
+        local function without_actor(func)
+            local actor = db.actor
+            db.actor = nil
+            func()
+            db.actor = actor
+        end
+
+        it("leaves the known value alone when a trader goes offline", function()
+            local id = met_trader(NAME, 1000)
+            H.save()
+            set_rep(id, 5000)
+            without_actor(function() leave(id) end)
+            H.die()
+            expect(model.rep_of(next_life())).toBeCloseTo(980)
+        end)
+
+        -- Nothing else looks at a trader who is online already.
+        it("gives a trader the value on the first update when they spawned before the actor", function()
+            met_trader(NAME, 1000)
+            H.die()
+            local id = next_life{ online = false }
+            H.save()
+            H.reload()
+            without_actor(function()
+                model.set_online(id, true)
+                model.frame()
+            end)
+            expect(model.rep_of(id)).toBeCloseTo(0)
+            H.frames(1)
+            expect(model.rep_of(id)).toBeCloseTo(980)
+        end)
+    end)
+
+    describe("given the penalty", function()
+        it("takes it from a negative rep as well, which lowers it", function()
+            met_trader(NAME, -1000)
+            H.die()
+            expect(model.rep_of(next_life{ rep = -2000 })).toBeCloseTo(-1020)
+        end)
+
+        it("does not go below -4000", function()
+            met_trader(NAME, -4000)
+            H.die()
+            expect(model.rep_of(next_life{ rep = -5000 })).toBeCloseTo(-4000)
+        end)
+
+        it("uses the percentage set in MCM", function()
+            met_trader(NAME, 1000)
+            H.die()
+            local id = next_life{
+                setup = function() model.set_mcm("trader_rep_penalty_percent", 0.5) end,
+            }
+            expect(model.rep_of(id)).toBeCloseTo(500)
+        end)
+
+        -- 1030 > 1009.4 > 1009 > 988.82 > 988. The fraction would carry 1009.4 > 989.21 > 989.
+        it("drops the fraction before the next life's penalty, as the engine would", function()
+            met_trader(NAME, 1030)
+            H.die()
+            next_life{ online = false }
+            H.die()
+            expect(model.rep_of(next_life())).toBeCloseTo(988)
+        end)
+
+        -- -1030 > -1050.6 > -1050.
+        it("truncates a negative value toward zero", function()
+            met_trader(NAME, -1030)
+            H.die()
+            expect(model.rep_of(next_life{ rep = -5000 })).toBeCloseTo(-1050)
+        end)
+    end)
+
+    describe("given a value refused because it is below the new-game rep", function()
+        it("is gone, so a later loss of rep is not overwritten", function()
+            met_trader(NAME, 100)
+            H.die()
+            local id = next_life{ rep = 500 }
+            set_rep(id, 50)
+            leave(id)
+            arrive(id)
+            expect(model.rep_of(id)).toBeCloseTo(50)
+        end)
+    end)
+
+    describe("given a save written before this version", function()
+        -- What another module's save_state leaves when this module wrote nothing.
+        it("still stores traders after loading a save with neither key", function()
+            SendScriptCallback("load_state", { roguelite_manager = {} })
+            leave(met_trader(NAME, 1000))
+            H.die()
+            expect(model.rep_of(next_life())).toBeCloseTo(980)
+        end)
+
+        it("still stores traders after loading a save with no mod data", function()
+            SendScriptCallback("load_state", {})
+            leave(met_trader(NAME, 1000))
+            H.die()
+            expect(model.rep_of(next_life())).toBeCloseTo(980)
+        end)
+
+        -- pda.script:101 guards this too, since an old save can lack the table.
+        it("does not raise when the save has no contacts", function()
+            local id = model.trader{ name = NAME, rep = 1000 }
+            alife_storage_manager.get_state().actor_contacts = nil
+            leave(id)
+            H.die()
+            expect(model.rep_of(next_life())).toBeCloseTo(0)
+        end)
+    end)
+
+    describe("given a game that is not Ironman", function()
+        beforeEach(function() H.fakes.hardcore_mode = false end)
+
+        it("writes nothing to the save", function()
+            met_trader(NAME, 1000)
+            H.save()
+            expect(alife_storage_manager.get_state().roguelite_manager).toBeNil()
+        end)
+
+        it("reads nothing from the save", function()
+            SendScriptCallback("load_state", { roguelite_manager = { trader_rep_pending = { [NAME] = 980 } } })
+            expect(model.rep_of(model.trader{ name = NAME })).toBeCloseTo(0)
+        end)
+    end)
+
+    describe("given a state file of another version", function()
+        it("does not restore from it", function()
+            roguelite_module_trader_rep.roguelite_load_state{ trader_rep_version = 2, trader_rep = { [NAME] = 1000 } }
+            expect(model.rep_of(model.trader{ name = NAME })).toBeCloseTo(0)
+        end)
+    end)
+
+    -- This runs on every frame of the game, so what it costs is the behaviour. Reading the
+    -- story table is the first thing a look does.
+    describe("the look for story traders", function()
+        local function looks_during(func)
+            local real = story_objects.object_id_by_story_id
+            local looks = 0
+            story_objects.object_id_by_story_id = setmetatable({}, {
+                __index = function(_, k)
+                    looks = looks + 1
+                    return real[k]
+                end,
+            })
+            func()
+            story_objects.object_id_by_story_id = real
+            return looks
+        end
+
+        local function few_frames() H.frames(5) end
+
+        it("does not happen with nothing pending", function()
+            model.script_trader{ name = NAME, story_id = "esc_m_trader", online = false }
+            H.frames(1)
+            expect(looks_during(few_frames)).toBe(0)
+        end)
+
+        it("stops once both have been seen, with a value still waiting elsewhere", function()
+            model.script_trader{ name = "Sidorovich", rep = 1000, story_id = "esc_m_trader" }
+            model.script_trader{ name = "Forester", rep = 1000, story_id = "red_forester_tech" }
+            met_trader("Cat", 1000)
+            H.die()
+            local sidorovich, forester, cat
+            H.new_life{
+                modules = MODULES,
+                before_first_update = function()
+                    sidorovich = model.script_trader{ name = "Sidorovich", story_id = "esc_m_trader", online = false }
+                    forester = model.script_trader{ name = "Forester", story_id = "red_forester_tech", online = false }
+                    cat = model.trader{ name = "Cat", online = false }
+                end,
+            }
+            expect(looks_during(few_frames)).toBeGreaterThan(0)
+
+            model.set_online(sidorovich, true)
+            model.set_online(forester, true)
+            H.frames(1)
+            expect(looks_during(few_frames)).toBe(0)
+            expect(model.rep_of(cat)).toBeCloseTo(0)
         end)
     end)
 end)
