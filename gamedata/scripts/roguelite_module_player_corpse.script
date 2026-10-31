@@ -24,6 +24,8 @@ local function get_corpse_data()
     roguelite_manager.debug_write("Gathering corpse data.")
 
     local pos = actor:position()
+    local actor_data = utils_stpk.get_stalker_data(se_actor)
+    local actor_visual = npc_data and npc_data.visual_name
     local corpse_data = { 
         position = {
             x = pos.x,
@@ -34,7 +36,7 @@ local function get_corpse_data()
         m_game_vertex_id = actor:game_vertex_id(),
         character_name = actor:character_name(),
         profile_name = se_actor:profile_name(),
-        visual = actor:get_visual_name(),
+        visual = actor_visual,
         character_icon = actor:character_icon(),
         level_name = level_name,
         items = {}
@@ -80,8 +82,9 @@ local function spawn_corpse(data)
 
 		if state then
 			state.icon_name = data.character_icon
-            -- TODO: setting visual puts character in a t-pose.... 
-            --state.visual = data.visual
+            if data.visual then
+                state.visual = data.visual
+            end
 		end    
 
         -- HACK: Add a quest item to the corpse so it doesn't despawn
@@ -322,7 +325,7 @@ local function new_create_release_item(npc)
 		local function release_actor_item(temp, item)
 			local sec = item:section()
 			roguelite_manager.debug_write("Releasing item " .. sec .. " id(" .. tostring(item:id()) .. ")")
-            
+
             local se_item = alife_object(item:id())
             if se_item then
 			    alife_release(item)

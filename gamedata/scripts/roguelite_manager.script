@@ -29,7 +29,7 @@
 --]]
 
 local config = {
-    version = "0.88.0",
+    version = "0.89.0",
 }
 
 --------------------------------
@@ -83,7 +83,6 @@ function debug_write(output)
         utils_data.debug_write("Roguelite Manager: "..output)
     end
 end
-
 --------------------------------
 -- Private stuff and things
 --------------------------------
@@ -195,6 +194,12 @@ function serialize_item(se_obj)
         section = section
     }
 
+    local is_sun = section == 'af_sun'
+
+    if is_sun then
+        debug_write("Serializing af_sun item: " .. print_table(se_obj))
+    end
+
     if IsWeapon(se_obj) then
         debug_write("Gathering weapon data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
         local data = utils_stpk.get_weapon_data(se_obj)
@@ -251,6 +256,14 @@ function serialize_item(se_obj)
         end
     end
 
+    if IsArtefact(se_obj) then
+        local obj_state = alife_storage_manager.get_se_obj_state(se_obj, true)
+        if (obj_state) then 
+            debug_write("Saved offline condition for PBA " .. se_obj:section_name() .. " " .. se_obj.id .. ": " .. tostring(obj_state.offline_condition))
+            stash_item_data.offline_condition = obj_state.offline_condition
+        end
+    end
+
     local parts_condition = item_parts.get_parts_con(nil, se_obj.id)
     if parts_condition then
         stash_item_data.parts_condition = dup_table(parts_condition)
@@ -271,7 +284,7 @@ function restore_item(section, position, level_vertex_id, game_vertex_id, item_d
         or string.find(section, "bad_psy_helmet")
         or string.find(section, "wpn_binoc_inv") -- For whatever reason this crashes things sometimes.
         or (string.find(section, "pda") and not string.find(section, "device_pda_1") and not string.find(section, "device_pda_2") and not string.find(section, "device_pda_3")) then
-        debug_write("Not restoring quest item " .. section)
+            debug_write("Not restoring quest item " .. section)
         return
     end
 
@@ -280,13 +293,16 @@ function restore_item(section, position, level_vertex_id, game_vertex_id, item_d
     local se_obj = alife_create(section, position, level_vertex_id, game_vertex_id, parent_item_id, state)
 
     if se_obj then      
+        local is_sun = section == 'af_sun'
         --debug_write("Created item " .. se_obj:name())
 
-        if item_data then
-            local item_processor = itms_manager.get_item_processor()
+        if is_sun then
+            debug_write("Created af_sun item: " .. print_table(se_obj))
+        end
 
+        if item_data then
             if IsWeapon(se_obj) then
-                --debug_write("Creating weapon data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
+                debug_write("Restoring weapon data for " .. section .. " " ..se_obj.id .. ".")
 
                 local data = utils_stpk.get_weapon_data(se_obj)
 
@@ -304,7 +320,7 @@ function restore_item(section, position, level_vertex_id, game_vertex_id, item_d
 
                 utils_stpk.set_weapon_data(data, se_obj)
             elseif IsAmmo(se_obj) then
-                --debug_write("Creating ammo data for " .. se_obj:name() .. " " .. se_obj.id .. ".")
+                debug_write("Restoring ammo data for " .. section .. " " ..se_obj.id .. ".")
 
                 local data = utils_stpk.get_ammo_data(se_obj)
 
@@ -318,7 +334,7 @@ function restore_item(section, position, level_vertex_id, game_vertex_id, item_d
 
                 utils_stpk.set_ammo_data(data, se_obj)
             else
-                --roguelite_manager.debug_write("Creating item data " .. se_obj:name() .. " " .. se_obj.id ..".")
+                debug_write("Restoring item data for " .. section .. " " ..se_obj.id .. ".")
 
                 local data = utils_stpk.get_item_data(se_obj)
 
@@ -332,18 +348,33 @@ function restore_item(section, position, level_vertex_id, game_vertex_id, item_d
                 utils_stpk.set_item_data(data, se_obj)
             end
 
+            if item_data.offline_condition then
+                debug_write("Updating item offline condition " .. section .. " " .. item_data.offline_condition ..".")
+                local m_data = alife_storage_manager.get_se_obj_state(se_obj, true)
+                if (m_data) then 
+                    m_data.offline_condition = item_data.offline_condition
+                end
+            end
+
             alife():register(se_obj)
 
             if item_parts and item_data.parts_condition then
                 item_parts.set_parts_con(se_obj.id, dup_table(item_data.parts_condition))
             end
 
-            if item_data.uses and item_data.uses ~= 0 then
-                roguelite_manager.debug_write("Updating item uses " .. section .. " " .. item_data.uses ..".")
+            local process_data = {
+                uses = item_data.uses,
+                cond = item_data.condition,
+            }
 
-                item_processor:Process_Item(nil, se_obj.id, {
-                    uses = item_data.uses                    
-                })
+            if process_data.cond or process_data.uses then
+                debug_write("Updating item data " .. section .. " uses:" .. tostring(process_data.uses) .. " cond:" .. tostring(process_data.cond) ..".")
+
+                local item_processor = itms_manager.get_item_processor()
+                local debug = item_processor.Debug
+                item_processor.Debug = true
+                item_processor:Process_Item(nil, se_obj.id, process_data)
+                item_processor.Debug = debug
             end
         else 
             alife():register(se_obj)

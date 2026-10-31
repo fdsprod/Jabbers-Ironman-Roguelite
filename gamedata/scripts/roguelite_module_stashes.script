@@ -152,17 +152,16 @@ local function try_spawn_stash(box)
 
     local se_box = alife_object(box:id())
     local item_processor = itms_manager.get_item_processor()
-
+    local debug = item_processor.Debug
     item_processor.Debug = true
-
     for _, item_data in pairs(stash.items) do
         local section = item_data.section
         roguelite_manager.restore_item(section, se_box.position, se_box.m_level_vertex_id, se_box.m_game_vertex_id, item_data, se_box.id, false)
     end
-
     level.map_remove_object_spot(box:id(), "treasure")
 
     item_processor:update()
+    item_processor.Debug = debug
     m_data.stashes[box:id()] = nil
 end
 
