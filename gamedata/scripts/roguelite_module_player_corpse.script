@@ -84,7 +84,7 @@ local function spawn_corpse(data)
             --state.visual = data.visual
 		end
 
-        -- Set while offline: stock reads dont_release only once, when it queues the body on net spawn
+        -- Set while offline: stock reads dont_release when it queues the body on net spawn, and not after
         se_save_var(se_mimic.id, se_mimic:name(), "dont_release", true)
         
         if roguelite_manager_mcm.get_config("show_stashes_on_pda", true) then
