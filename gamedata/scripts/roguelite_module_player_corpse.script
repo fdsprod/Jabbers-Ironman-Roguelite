@@ -24,9 +24,7 @@ local function get_corpse_data()
     roguelite_manager.debug_write("Gathering corpse data.")
 
     local pos = actor:position()
-    local actor_data = utils_stpk.get_stalker_data(se_actor)
-    local actor_visual = npc_data and npc_data.visual_name
-    local corpse_data = { 
+    local corpse_data = {
         position = {
             x = pos.x,
             y = pos.y,
@@ -36,7 +34,7 @@ local function get_corpse_data()
         m_game_vertex_id = actor:game_vertex_id(),
         character_name = actor:character_name(),
         profile_name = se_actor:profile_name(),
-        visual = actor_visual,
+        visual = actor:get_visual_name(),
         character_icon = actor:character_icon(),
         level_name = level_name,
         items = {}
@@ -82,10 +80,9 @@ local function spawn_corpse(data)
 
 		if state then
 			state.icon_name = data.character_icon
-            if data.visual then
-                state.visual = data.visual
-            end
-		end    
+            -- TODO: setting visual puts character in a t-pose....
+            --state.visual = data.visual
+		end
 
         -- HACK: Add a quest item to the corpse so it doesn't despawn
         alife_create("sl_ht_walkie_talkie", pos, data.m_level_vertex_id, data.m_game_vertex_id, se_mimic.id, false)
@@ -280,7 +277,7 @@ local function new_keep_item(npc, item)
         return
     end
 
-    if not m_data.is_looted and m_data.corpse and m_data.corpse.id == npc:id() then   
+    if m_data.corpse.id == npc:id() then
         return
     else
         old_keep_item(npc, item)
@@ -298,28 +295,35 @@ local function new_create_release_item(npc)
     end
 
     roguelite_manager.debug_write("Create release item hook checking npc.id(" .. tostring(npc:id()) .. ") == corpse.id("..tostring(m_data.corpse.id)..").")
-    
-    if not m_data.is_looted and m_data.corpse and m_data.corpse.id == npc:id() then        
+
+    if m_data.corpse.id == npc:id() then
+        -- This runs again whenever the body is opened or an NPC searches it. Handing the
+        -- body to the stock code then would roll over the gear just restored.
+        if m_data.is_looted then
+            return
+        end
+
         m_data.is_looted = true
-        
-        local loss_chance = 100 - (roguelite_manager_mcm.get_config("drop_player_inventory_item_loss_chance", 0.25) * 100)
+        se_save_var(npc:id(), npc:name(), "death_dropped", true)
+
+        local keep_chance = 100 - (roguelite_manager_mcm.get_config("drop_player_inventory_item_loss_chance", 0.25) * 100)
 
         if(roguelite_manager_mcm.get_config("drop_player_inventory_item_loss_max_ingame_time_enabled", true)) then
             local tg = get_time_elapsed()
             local min_tg = 5*60 -- 5 minute grace period
             local max_tg = roguelite_manager_mcm.get_config("drop_player_inventory_item_loss_max_ingame_time_seconds", 3600)
-            
-            loss_chance = (math.max(tg - min_tg, 0)) / (max_tg - min_tg)
-            
+
+            local time_fraction = math.min(math.max(tg - min_tg, 0) / (max_tg - min_tg), 1)
+
             --roguelite_manager.debug_write("tg="..tostring(tg))
             --roguelite_manager.debug_write("min_tg="..tostring(min_tg))
             --roguelite_manager.debug_write("max_tg="..tostring(max_tg))
-            --roguelite_manager.debug_write("loss_chance="..tostring(loss_chance))
-        
-            loss_chance = 100 - ((roguelite_manager_mcm.get_config("drop_player_inventory_item_loss_chance", 0.25) * loss_chance) * 100);
+            --roguelite_manager.debug_write("time_fraction="..tostring(time_fraction))
+
+            keep_chance = 100 - ((roguelite_manager_mcm.get_config("drop_player_inventory_item_loss_chance", 0.25) * time_fraction) * 100);
         end
 
-        roguelite_manager.debug_write("final_loss_chance="..tostring(loss_chance))
+        roguelite_manager.debug_write("final_keep_chance="..tostring(keep_chance))
 
         -- Delete all items since we will recreate
 		local function release_actor_item(temp, item)
@@ -336,9 +340,9 @@ local function new_create_release_item(npc)
 
         for _, item_data in pairs(m_data.corpse.items) do
             local section = item_data.section
-            local loot_dice_roll = math.random(0, 100)
-            --roguelite_manager.debug_write("loot_dice_roll="..tostring(loot_dice_roll).." < "..tostring(loss_chance).." for item "..section)
-            if loot_dice_roll < loss_chance then
+            local loot_dice_roll = math.random(1, 100)
+            --roguelite_manager.debug_write("loot_dice_roll="..tostring(loot_dice_roll).." <= "..tostring(keep_chance).." for item "..section)
+            if loot_dice_roll <= keep_chance then
                 roguelite_manager.restore_item(section, npc:position(), npc:level_vertex_id(), npc:game_vertex_id(), item_data, npc:id(), false)
             else
                 roguelite_manager.debug_write(section.." was not restored due to dice roll.")
