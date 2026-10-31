@@ -130,6 +130,93 @@ describe("stash markers", function()
         end)
     end)
 
+    describe("given another mod cancels the removal", function()
+        -- Stock checks data.cancel after the callback and keeps the stash
+        -- (item_backpack.script:73-76). Callback order is not fixed (axr_main.script:274),
+        -- so this is the case where the other mod ran first.
+        local function cancelled_remove(id)
+            SendScriptCallback("actor_on_stash_remove", { stash_id = id, cancel = true })
+        end
+
+        it("keeps its marker", function()
+            local id = opened_stash()
+            cancelled_remove(id)
+            expect(markers_on(id)).toBe(1)
+        end)
+
+        it("still loses its marker when the stash goes later", function()
+            local id = opened_stash()
+            cancelled_remove(id)
+            picked_up(id)
+            game_load()
+            expect(markers_on(id)).toBe(0)
+        end)
+    end)
+
+    describe("given several stashes released with no callback", function()
+        it("loses every marker at the next game load", function()
+            model.give(model.stash("placeable_case"), "vodka", { uses = 1 })
+            model.give(model.stash("placeable_fridge"), "vodka", { uses = 1 })
+            H.frames(2)
+            H.die()
+            H.new_life()
+            local case = model.all_stashes("placeable_case")[1].id
+            local fridge = model.all_stashes("placeable_fridge")[1].id
+            picked_up(case)
+            picked_up(fridge)
+            game_load()
+            expect(markers_on(case)).toBe(0)
+            expect(markers_on(fridge)).toBe(0)
+        end)
+    end)
+
+    describe("given a marker on an id the mod has finished with", function()
+        -- The engine reuses freed ids (id_generator.h, tfGetID and vfFreeID), and any mod
+        -- can put this spot type on its own object. The spot here stands for a later
+        -- object on the same id that has since gone too. While such an object is alive
+        -- the sweep leaves its marker anyway, as the id still has a server object.
+        local OTHER_MOD = "another mod's marker"
+
+        it("leaves it alone after stock removed the stash", function()
+            local id = opened_stash()
+            stock_remove(id)
+            level.map_add_object_spot_ser(id, MARKER, OTHER_MOD)
+            game_load()
+            expect(markers_on(id)).toBe(1)
+        end)
+
+        it("leaves it alone after an earlier game load removed the stash's marker", function()
+            local id = opened_stash()
+            picked_up(id)
+            game_load()
+            level.map_add_object_spot_ser(id, MARKER, OTHER_MOD)
+            game_load()
+            expect(markers_on(id)).toBe(1)
+        end)
+    end)
+
+    describe("given a save with stashes and no list of restored stashes", function()
+        -- save_state has written the list since a900f3a (2023). An older save has only
+        -- the stashes, and the marker it holds is one the mod no longer knows about.
+        local function strip_list_from_save()
+            local path = "saves/quicksave.scoc"
+            local data = marshal.decode(model.files[path])
+            data.roguelite_manager.spawned_stashes = nil
+            model.files[path] = marshal.encode(data)
+        end
+
+        it("gets through a game load and a stash removal", function()
+            local id = opened_stash()
+            H.save()
+            strip_list_from_save()
+            H.reload()
+            expect(game_load).never.toThrow()
+            expect(function()
+                SendScriptCallback("actor_on_stash_remove", { stash_id = id, cancel = false })
+            end).never.toThrow()
+        end)
+    end)
+
     describe("given a save and a reload", function()
         -- FIXES: scripts re-execute on load, so what the mod knows about its markers has
         -- to come back through the save.
