@@ -236,6 +236,10 @@ function serialize_item(se_obj)
         section = section
     }
 
+    -- Decided now because the clsid is only sure to mean this class in this session.
+    -- Always a boolean, since a missing value means a file from before this was saved.
+    stash_item_data.degrades_by_class = (IsWeapon(se_obj) or IsOutfit(se_obj) or IsHeadgear(se_obj)) and true or false
+
     local is_sun = section == 'af_sun'
 
     if is_sun then

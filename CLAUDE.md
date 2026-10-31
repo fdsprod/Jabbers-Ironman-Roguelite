@@ -129,7 +129,9 @@ while the object is online. An item in a stash on another level has no client ob
 - **`ItemProcessor` gives up.** It drops an id after about 12 updates with no client object.
 - **Do not use `get_stalker_data` on the actor.** The actor's packet is laid out differently.
 - **Clsids are runtime ordinals**, so one saved in the state file can go stale if the
-  modlist changes. Prefer deciding from the section.
+  modlist changes. Decide from the section, or from the live clsid at save time and store
+  the answer, as `serialize_item` does with `degrades_by_class`. The saved clsid is only
+  the fallback for state files older than that field.
 
 ## MCM
 

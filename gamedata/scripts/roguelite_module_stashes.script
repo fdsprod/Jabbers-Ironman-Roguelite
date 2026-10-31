@@ -110,10 +110,16 @@ local function restore_prior_state_stashes_v1(data)
                     local class = ini_sys:r_string_ex(item_data.section,"class") or nil
                     if class then 
                         roguelite_manager.debug_write("Condition check for item clsid:"..item_data.clsid.." class:"..class.." section:"..item_data.section)
-                        if (IsWeapon(nil, item_data.clsid) and (item_data.section ~= "wpn_binoc_inv")) or
-                            IsOutfit(nil, item_data.clsid) or
-                            IsHeadgear(nil, item_data.clsid) or
-                            IsItem("device", item_data.section) then
+                        -- The saved clsid may name another class by now, so it is only
+                        -- for files from before serialize_item made this decision.
+                        local degrades = item_data.degrades_by_class
+                        if degrades == nil then
+                            degrades = IsWeapon(nil, item_data.clsid) or
+                                IsOutfit(nil, item_data.clsid) or
+                                IsHeadgear(nil, item_data.clsid)
+                        end
+                        if (item_data.section ~= "wpn_binoc_inv") and
+                            (degrades or IsItem("device", item_data.section)) then
                             item_data.condition = degrade(item_data.section, item_data.condition)
                         end
                     end
