@@ -84,8 +84,8 @@ local function spawn_corpse(data)
             --state.visual = data.visual
 		end
 
-        -- HACK: Add a quest item to the corpse so it doesn't despawn
-        alife_create("sl_ht_walkie_talkie", pos, data.m_level_vertex_id, data.m_game_vertex_id, se_mimic.id, false)
+        -- Set while offline: stock reads dont_release only once, when it queues the body on net spawn
+        se_save_var(se_mimic.id, se_mimic:name(), "dont_release", true)
         
         if roguelite_manager_mcm.get_config("show_stashes_on_pda", true) then
             level.map_add_object_spot_ser(se_mimic.id, "treasure_player", data.character_name .. " corpse")
