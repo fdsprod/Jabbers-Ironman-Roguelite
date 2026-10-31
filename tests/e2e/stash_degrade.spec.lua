@@ -90,6 +90,9 @@ describe("stash item condition loss across lives", function()
         -- WP_BINOC is wpn_binocular_s (class_registrator.script:76), which is not in
         -- IsWeapon's table (_g.script:3085-3120). So no Is* predicate claims this kind.
         H.define("wpn_binoc_inv", { kind = "binoc", class = "WP_BINOC" })
+        -- A plain item to the Is* predicates, so only its section makes it degrade.
+        -- items_devices.ltx:198, :202, and :10 for the binding it inherits.
+        H.define("detector_simple", { class = "DET_SIMP", use_condition = true, script_binding = "item_device.bind" })
     end)
 
     describe("given clsids that are still right", function()
@@ -111,6 +114,29 @@ describe("stash item condition loss across lives", function()
             expect(condition_saved_at_next_death("wpn_binoc_inv")).toBeCloseTo(0.8)
             -- The same read does see the loss on an item that takes it.
             expect(condition_saved_at_next_death("wpn_ak74")).toBeCloseTo(0.594)
+        end)
+
+        it("degrades a device", function()
+            die_with({ detector_simple = 0.7 })
+            H.new_life()
+            expect(condition_in(open_restored(), "detector_simple")).toBeCloseTo(0.693)
+        end)
+
+        -- No stock config gives it such a class, and all the GAMMA overrides of it keep
+        -- WP_BINOC, so this pins the exclusion for a modlist that does.
+        it("does not degrade wpn_binoc_inv saved as a weapon", function()
+            H.define("wpn_binoc_inv", { kind = "weapon", class = "WP_AK74" })
+            die_with({ wpn_binoc_inv = 0.8 })
+            H.new_life()
+            expect(condition_saved_at_next_death("wpn_binoc_inv")).toBeCloseTo(0.8)
+        end)
+
+        -- The class check is what skips a section this modlist no longer configures.
+        it("does not degrade a section with no class", function()
+            H.define("wpn_no_class", { kind = "weapon" })
+            die_with({ wpn_no_class = 0.6 })
+            H.new_life()
+            expect(condition_in(open_restored(), "wpn_no_class")).toBeCloseTo(0.6)
         end)
     end)
 
@@ -158,6 +184,42 @@ describe("stash item condition loss across lives", function()
             make_stale({ wpn_binoc_inv = "weapon" })
             H.new_life()
             expect(condition_saved_at_next_death("wpn_binoc_inv")).toBeCloseTo(0.8)
+        end)
+    end)
+
+    -- save_stash hands the items of an unopened stash straight to the next state file
+    -- (roguelite_module_stashes.script:223-226), so the decision has to survive that.
+    describe("given a stash left unopened over several lives, with a stale clsid", function()
+        it("degrades a weapon once per life", function()
+            die_with({ wpn_ak74 = 0.6 })
+            make_stale({ wpn_ak74 = "artefact" })
+            H.new_life()
+            H.die()
+            H.new_life()
+            expect(condition_in(open_restored(), "wpn_ak74")).toBeCloseTo(0.58806)
+        end)
+
+        it("does not degrade a plain item in any life", function()
+            die_with({ prt_w_barrel_1 = 0.4 })
+            make_stale({ prt_w_barrel_1 = "weapon" })
+            H.new_life()
+            H.die()
+            H.new_life()
+            expect(condition_in(open_restored(), "prt_w_barrel_1")).toBeCloseTo(0.4)
+        end)
+
+        -- A save moves the items through the marshal table and back.
+        it("keeps the decision through a save and load in between", function()
+            die_with({ wpn_ak74 = 0.6, prt_w_barrel_1 = 0.4 })
+            make_stale({ wpn_ak74 = "artefact", prt_w_barrel_1 = "weapon" })
+            H.new_life()
+            H.save()
+            H.reload()
+            H.die()
+            H.new_life()
+            local box = open_restored()
+            expect(condition_in(box, "wpn_ak74")).toBeCloseTo(0.58806)
+            expect(condition_in(box, "prt_w_barrel_1")).toBeCloseTo(0.4)
         end)
     end)
 
@@ -223,6 +285,11 @@ describe("stash item condition loss across lives", function()
         it("does not degrade wpn_binoc_inv saved with a clsid that reads as a weapon", function()
             new_life_from_old_file({ [78] = old_item(78, "wpn_binoc_inv", "weapon", 0.8) })
             expect(condition_saved_at_next_death("wpn_binoc_inv")).toBeCloseTo(0.8)
+        end)
+
+        it("degrades a device", function()
+            new_life_from_old_file({ [78] = old_item(78, "detector_simple", "item", 0.7) })
+            expect(condition_in(open_restored(), "detector_simple")).toBeCloseTo(0.693)
         end)
     end)
 end)
