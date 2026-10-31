@@ -1,0 +1,2 @@
+-- A fresh table each execution, so a double-load is detectable by identity.
+instance = {}

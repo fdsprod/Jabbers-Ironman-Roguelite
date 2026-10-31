@@ -1,0 +1,2 @@
+local partner = fixture_circular_a
+B_SAW_PARTNER = partner ~= nil
