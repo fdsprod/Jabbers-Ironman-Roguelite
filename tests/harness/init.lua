@@ -292,7 +292,13 @@ end
 function M.reload(name)
     local saved = M.alife.export()
     local modules = M.alife.module_names
+    -- The save holds spots added by map_add_object_spot_ser (level_script.cpp:321,
+    -- map_manager.cpp:84-107). In 028ccf5 a loaded spot whose object is gone then drops
+    -- on the first map update (map_location.cpp:55, :337-346, alife_storage_manager.cpp:
+    -- 140, :155). GUESS for the newer build. Not modelled: the mod must not rely on it.
+    local spots = M.fakes.map_spots
     M.boot_game{ keep_files = true, modules = modules }
+    M.fakes.map_spots = spots
     M.alife.import(saved)
     M.alife.attach_actor(_G.db.actor)
     _G.alife_storage_manager.CALifeStorageManager_load("saves/" .. (name or "quicksave") .. ".scop")

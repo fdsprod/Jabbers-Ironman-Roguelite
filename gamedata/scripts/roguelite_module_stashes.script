@@ -270,6 +270,22 @@ local function get_player_stashes()
     return stash_data
 end
 
+-- Dropping the id as well stops a later object reusing it being swept for this stash.
+local function remove_stash_marker(index)
+    level.map_remove_object_spot(m_data.spawned_stashes[index], "treasure_player")
+    table.remove(m_data.spawned_stashes, index)
+end
+
+-- For stashes released without actor_on_stash_remove, such as by another mod. Only
+-- the server object can say a stash is gone, as an offline stash has no client object.
+local function remove_stale_stash_markers()
+    for i = #m_data.spawned_stashes, 1, -1 do
+        if not alife_object(m_data.spawned_stashes[i]) then
+            remove_stash_marker(i)
+        end
+    end
+end
+
 --------------------------------
 -- Game Callbacks
 --------------------------------
@@ -321,7 +337,7 @@ local function load_state(data)
         if  data.roguelite_manager.stashes then
             roguelite_manager.debug_write("Restoring stash data from prior save.")
             m_data.stashes = data.roguelite_manager.stashes
-            m_data.spawned_stashes =  data.roguelite_manager.spawned_stashes
+            m_data.spawned_stashes = data.roguelite_manager.spawned_stashes or {}
         end
         if  data.roguelite_manager.item_uses_data then
             roguelite_manager.debug_write("Restoring item use data from prior save.")
@@ -389,10 +405,16 @@ local function actor_on_item_put_in_box(box, item)
 end
 
 local function actor_on_stash_remove(data) 
-    --if m_data.spawned_stashes and table_has_value(m_data.spawned_stashes, data.stash_id) then
-    --    data.cancel = true
-    --    return
-    --end
+    -- Another mod has cancelled the removal, so the stash is staying.
+    if data.cancel then
+        return
+    end
+
+    for i = #m_data.spawned_stashes, 1, -1 do
+        if m_data.spawned_stashes[i] == data.stash_id then
+            remove_stash_marker(i)
+        end
+    end
 end
 
 function roguelite_load_state(save_data)
@@ -468,6 +490,8 @@ function on_game_load()
     if ui_mcm then
 	    on_option_change()
     end
+
+    remove_stale_stash_markers()
 end
 
 function on_game_start()
