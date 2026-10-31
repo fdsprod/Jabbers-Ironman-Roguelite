@@ -64,9 +64,9 @@ describe("stash item condition loss across lives", function()
         model.files[STATE_FILE] = marshal.encode(data)
     end
 
-    -- restore_item refuses to spawn wpn_binoc_inv (roguelite_manager.script:331), so
+    -- restore_item refuses to spawn wpn_binoc_inv (roguelite_manager.script:335), so
     -- its condition can't be read off an item. An unopened stash writes its data back
-    -- at the next death (roguelite_module_stashes.script:217-220), which can be read.
+    -- at the next death (roguelite_module_stashes.script:223-226), which can be read.
     local function condition_saved_at_next_death(section)
         H.die()
         local data = marshal.decode(model.files[STATE_FILE])
