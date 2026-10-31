@@ -301,12 +301,16 @@ end
 
 --- The next life: a new game. Everything is gone except the state file. Ids start
 --- elsewhere, and the mod's first-update hook restores from the file.
+---
+--- opts.before_first_update  builds the new game's world, which exists before the
+--- actor's first update. An NPC made here is online or offline at the restore.
 function M.new_life(opts)
     opts = opts or {}
     M.life = M.life + 1
     opts.keep_files = true
     opts.id_base = 1000 + M.life * 3000
     M.boot_game(opts)
+    if opts.before_first_update then opts.before_first_update() end
     SendScriptCallback("actor_on_first_update")
     return M
 end

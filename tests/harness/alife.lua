@@ -180,7 +180,8 @@ local function new_record(section, position, lvid, gvid, parent_id)
     function rec.name(_) return section .. rec.id end
     function rec.clsid(_) return fakes.clsid_for(rec._kind) end
     -- The stalker the corpse module spawns (roguelite_module_player_corpse.script:75).
-    function rec.set_character_name(_, name) rec.character_name = name end
+    function rec.set_character_name(_, name) rec._character_name = name end
+    function rec.character_name(_) return rec._character_name end
     function rec.set_profile_name(_, name) rec.profile = name end
     function rec.kill(_) rec.dead = true end
     records[rec.id] = rec
@@ -205,6 +206,44 @@ local function children_of(id)
 end
 
 -- --------------------------------------------------------- client objects
+
+-- game_object.relation values (script_game_object_script2.cpp:38-44, over
+-- ERelationType at alife_space.h:82-90).
+local RELATION = { friend = 0, neutral = 1, enemy = 2, dummy = -1 }
+
+-- What a stalker's client object adds. Rep lives on the record, because the setter
+-- writes through to the server object (InventoryOwner.cpp:471-486) and a new client
+-- reads it back (InventoryOwner.cpp:135, character_info.cpp:158).
+local function add_stalker_surface(obj, rec)
+    function obj:character_name() return rec._character_name end
+    function obj:character_community() return rec._community end
+    function obj:character_reputation() return rec._reputation or 0 end
+    -- Takes an int, and luabind casts the Lua number, so it truncates toward zero
+    -- (script_game_object_inventory_owner.cpp:957, luabind policy.hpp:377).
+    function obj:set_character_reputation(v)
+        rec._reputation = v >= 0 and math.floor(v) or math.ceil(v)
+    end
+    function obj:relation(_) return rec._relation or RELATION.neutral end
+    function obj:alive() return not rec.dead end
+end
+
+-- motivator_binder: db.storage in reinit (xr_motivator.script:40), then in net_spawn
+-- db.add_obj (:93, db.script:70-76) and the callback (:182).
+local function stalker_appears(obj, rec)
+    _G.db.storage[rec.id] = { object = obj, ini = rec._ini, section_logic = rec._section_logic }
+    _G.db.OnlineStalkers[#_G.db.OnlineStalkers + 1] = rec.id
+    _G.SendScriptCallback("npc_on_net_spawn", obj, rec.proxy)
+end
+
+-- motivator_binder:net_destroy: the callback (xr_motivator.script:226) comes before
+-- db.del_obj (:258, db.script:78-83), so the handler still sees a working client.
+local function stalker_leaves(obj, rec)
+    _G.SendScriptCallback("npc_on_net_destroy", obj)
+    _G.db.storage[rec.id] = nil
+    for i = #_G.db.OnlineStalkers, 1, -1 do
+        if _G.db.OnlineStalkers[i] == rec.id then table.remove(_G.db.OnlineStalkers, i) end
+    end
+end
 
 local function make_client(rec)
     local def = fakes.ltx[rec.section] or {}
@@ -256,12 +295,15 @@ local function make_client(rec)
     end
     function obj:bind_object(binder) self._binder = binder end
 
+    if rec._kind == "stalker" then add_stalker_surface(obj, rec) end
+
     clients[rec.id] = obj
     rec.online = true
 
     if def.script_binding == "bind_item.bind" and rawget(_G, "bind_item") then
         _G.bind_item.bind(obj)
     end
+    if rec._kind == "stalker" then stalker_appears(obj, rec) end
     return obj
 end
 
@@ -345,6 +387,7 @@ function M.set_online(id, online)
         end
     else
         rec.online = false
+        if rec._kind == "stalker" and clients[id] then stalker_leaves(clients[id], rec) end
         clients[id] = nil
         for _, child in ipairs(children_of(id)) do
             child.online = false
@@ -352,6 +395,56 @@ function M.set_online(id, online)
         end
     end
 end
+
+--- An NPC in the world. Returns its id. opts: name, section, community, rep, online
+--- (default true), relation, story_id, ini and section_logic (for db.storage). The
+--- server fields are the bindings at xrServer_Objects_ALife_Monsters_script.cpp:71, :74
+--- and :79.
+function M.stalker(opts)
+    opts = opts or {}
+    local rec = new_record(opts.section or "sim_default_stalker")
+    rec._kind = "stalker"
+    rec.registered = true
+    rec._character_name = opts.name
+    rec._community = opts.community or "stalker"
+    rec._reputation = opts.rep or 0
+    rec._relation = opts.relation
+    rec._ini = opts.ini
+    rec._section_logic = opts.section_logic
+    rec._story_id = opts.story_id
+    function rec.community(_) return rec._community end
+    function rec.reputation(_) return rec._reputation end
+    if opts.story_id then _G.story_objects.register(rec.id, opts.story_id) end
+    if opts.online ~= false then make_client(rec) end
+    return rec.id
+end
+
+--- A stalker utils_obj.is_trader says yes to. By default through community "trader".
+--- Pass a section with "trader" in it and a community to use the section branch.
+function M.trader(opts)
+    opts = opts or {}
+    local copy = {}
+    for k, v in pairs(opts) do copy[k] = v end
+    copy.community = opts.community or "trader"
+    return M.stalker(copy)
+end
+
+--- The rep the engine holds, whether or not the NPC is online. m_reputation on the
+--- server object (InventoryOwner.cpp:482).
+function M.rep_of(id) return records[id]._reputation end
+
+--- The player talks to them (pda.script:101-104).
+function M.meet(id)
+    local m_data = _G.alife_storage_manager.get_state()
+    if not (m_data.actor_contacts) then
+        m_data.actor_contacts = {}
+    end
+    m_data.actor_contacts[id] = true
+end
+
+--- An online NPC with no db.storage entry, which makes is_trader raise. It stays in
+--- db.OnlineStalkers.
+function M.drop_storage(id) _G.db.storage[id] = nil end
 
 --- Set an MCM value as ui_mcm.get returns it, by the key get_config is given.
 function M.set_mcm(key, value) fakes.mcm["roguelite/" .. key] = value end
@@ -435,6 +528,8 @@ function M.import(saved)
     spawn_queue = {}
     for _, rec in pairs(records) do
         if rec.online and rec.id ~= _G.AC_ID then queue_spawn(rec) end
+        -- Registered again as each server object registers (axr_main.script:368).
+        if rec._story_id then _G.story_objects.register(rec.id, rec._story_id) end
     end
 end
 
@@ -472,6 +567,52 @@ local function install_engine_surface(env)
     end
     -- _g.script:1073
     env.get_clsid = function(obj) return obj and obj:clsid() or nil end
+    -- Only what is_trader and db.add_obj compare against.
+    env.clsid = {
+        script_stalker = fakes.clsid_for("stalker"),
+        script_trader  = fakes.clsid_for("script_trader"),
+        trader         = fakes.clsid_for("trader"),
+    }
+    env.game_object = RELATION
+
+    -- story_objects.script:3-14. A story id is known while its object is offline.
+    env.story_objects = { object_id_by_story_id = {}, story_id_by_object_id = {} }
+    function env.story_objects.register(obj_id, story_id)
+        local so = env.story_objects
+        if so.object_id_by_story_id[story_id] and so.object_id_by_story_id[story_id] ~= obj_id then
+            return
+        end
+        so.object_id_by_story_id[story_id] = obj_id
+        so.story_id_by_object_id[obj_id] = story_id
+    end
+
+    -- Verbatim from utils_obj.script:74-95. `trader` is an undefined global there,
+    -- so it reads nil. With no db.storage entry the third step raises.
+    local string_find = string.find
+    local trader = nil
+    env.utils_obj.is_trader = function(...)
+        local p = {...}
+        if p[1]:character_community() == "trader" or p[1]:clsid() == env.clsid.script_trader or p[1]:clsid() == env.clsid.trader then
+            return true
+        end
+
+        if string_find(p[1]:section(),"trader") then
+            return true
+        end
+
+        local cini = env.db.storage[p[1]:id()].ini
+        local logic = env.db.storage[p[1]:id()].section_logic
+
+        if not logic and not trader then
+            return false
+        end
+
+        if cini and logic and cini:section_exist(logic) and cini:line_exist(logic,"trade") then
+            return true
+        end
+
+        return false
+    end
     -- _g.script:2425, for the only object these specs ask about.
     env.character_community = function(obj) return obj:character_community() end
 
