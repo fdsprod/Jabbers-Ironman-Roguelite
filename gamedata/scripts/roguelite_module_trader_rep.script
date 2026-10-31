@@ -27,13 +27,16 @@ end
 local function is_friendly_trader(npc)
     -- is_trader indexes db.storage[id] unchecked, and one NPC must not cost the others their rep.
     local ok, is_trader = pcall(utils_obj.is_trader, npc)
-    -- db.actor is nil while a level is coming down, and relation raises on nil.
+    -- db.actor is nil while a level is coming down, and relation derefs it unchecked, so a likely crash.
     return ok and is_trader and IsStalker(npc) and npc:alive() and db.actor and npc:relation(db.actor) ~= game_object.enemy
 end
 
 local function get_story_trader(story_id)
     local id = story_objects.object_id_by_story_id[story_id]
-    return id and db.storage[id] and db.storage[id].object
+    local npc = id and db.storage[id] and db.storage[id].object
+    -- A mod could put a story id on anything. Every client object has the rep methods, but
+    -- they do nothing useful on a non-inventory owner, so go by clsid.
+    return npc and (IsTrader(npc) or IsStalker(npc)) and npc or nil
 end
 
 local function for_each_online_stalker(func)
@@ -125,7 +128,8 @@ local function get_player_trader_rep()
     for i=1, #story_traders do
         local id = story_objects.object_id_by_story_id[story_traders[i]]
         local se_obj = id and alife_object(id)
-        if se_obj and not m_data.trader_rep_pending[se_obj:character_name()] then
+        -- Only a trader's server object binds these, and a raise here would cost every trader.
+        if se_obj and se_obj.character_name and se_obj.reputation and not m_data.trader_rep_pending[se_obj:character_name()] then
             local rep = se_obj:reputation()
             roguelite_manager.debug_write("Storing trader "..se_obj:character_name().." with rep "..tostring(rep)..".")
             m_data.trader_rep[se_obj:character_name()] = rep
