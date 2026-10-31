@@ -188,6 +188,41 @@ describe("the player corpse", function()
                 player_opens(reach_corpse())
                 expect(#model.all_stashes("sl_ht_walkie_talkie")).toBe(0)
             end)
+
+            it("exempts the body without it", function()
+                expect(exempt(model.all_stashes("stalker_azazel")[1].id)).toBeTruthy()
+            end)
+        end)
+
+        describe("given PDA markers turned off", function()
+            -- H.new_life with the option set between boot and first update, because a
+            -- new life wipes the settings and the first update is what spawns the body.
+            beforeEach(function()
+                H.die()
+                H.life = H.life + 1
+                H.boot_game{ keep_files = true, modules = MODULES, id_base = 1000 + H.life * 3000 }
+                model.set_mcm("show_stashes_on_pda", false)
+                SendScriptCallback("actor_on_first_update")
+                expect(#model.all_stashes("stalker_azazel")).toBe(1)
+            end)
+
+            it("still exempts the body", function()
+                expect(exempt(model.all_stashes("stalker_azazel")[1].id)).toBeTruthy()
+            end)
+        end)
+
+        -- Stock queues again on every net spawn, including the one after a load, and the
+        -- queue itself is not saved (release_body_manager.script:201-207).
+        describe("after a save and reload", function()
+            it("still exempts the body", function()
+                next_life()
+                local id = model.all_stashes("stalker_azazel")[1].id
+                H.save()
+                H.reload()
+                SendScriptCallback("on_game_load") -- bind_stalker_ext.script:61
+                expect(#model.all_stashes("stalker_azazel")).toBe(1)
+                expect(exempt(id)).toBeTruthy()
+            end)
         end)
     end)
 
