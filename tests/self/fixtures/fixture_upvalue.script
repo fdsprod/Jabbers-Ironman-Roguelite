@@ -1,0 +1,12 @@
+-- `hidden_helper` is file-local and never exported, mirroring
+-- compute_fatal_hit_info in soulslike_scenario_logic_factory.script:8.
+-- Because `exported` references it, it becomes an upvalue of `exported`
+-- and is reachable via debug.getupvalue.
+
+local function hidden_helper(n)
+    return n * 2
+end
+
+function exported(n)
+    return hidden_helper(n) + 1
+end

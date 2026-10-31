@@ -1,0 +1,19 @@
+-- Exercises where names land under the engine's namespace wrapper.
+
+MODULE_LOCAL = "yes"
+
+function _G.fixture_explicit_global()
+    return "global"
+end
+
+function math.fixture_added()
+    return "mutated"
+end
+
+function read_outer()
+    return OUTER_VALUE
+end
+
+function who()
+    return script_name()
+end

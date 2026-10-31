@@ -1,0 +1,4 @@
+# LuaJIT is a build artifact, not source. Rebuild it from the engine repo:
+#   xray-monolith/src/3rd party/luajit-2/src/msvcbuild.bat static
+# See CLAUDE.md in this directory.
+tools/

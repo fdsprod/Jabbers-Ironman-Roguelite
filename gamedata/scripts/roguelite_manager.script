@@ -29,7 +29,7 @@
 --]]
 
 local config = {
-    version = "0.88.0",
+    version = "0.89.0",
 }
 
 --------------------------------
@@ -74,6 +74,10 @@ local function print_table (tbl, indent)
 end
 
 function debug_write(output)
+    if not roguelite_manager_mcm.get_config("debug", false) then
+        return
+    end
+
     if (type(output) == "table") then
         if true then -- For debugging purposes
             return
@@ -83,10 +87,19 @@ function debug_write(output)
         utils_data.debug_write("Roguelite Manager: "..output)
     end
 end
-
 --------------------------------
 -- Private stuff and things
 --------------------------------
+
+-- One module's error must not cost the player every other module's data. Modules can
+-- be third party, and this runs while the actor is dying. Logged whatever the debug
+-- option says, since it means data was lost.
+local function call_module(name, func, data)
+    local ok, err = pcall(func, data)
+    if not ok then
+        utils_data.debug_write("Roguelite Manager: module "..name.." failed: "..tostring(err))
+    end
+end
 
 local function load_prior_state()
 
@@ -123,7 +136,7 @@ local function load_prior_state()
     for name, module in pairs(modules) do
         if module.roguelite_load_state then 
             debug_write("Loading data "..name)
-            module.roguelite_load_state(data)
+            call_module(name, module.roguelite_load_state, data)
         end
     end
 end
@@ -186,6 +199,34 @@ function serialize_se_obj(se_obj)
     }
 end
 
+-- Uses live only on the client object, which an offline item doesn't have, and the
+-- engine doesn't carry them across. bind_item keeps them in a local table to restore
+-- them when the item comes back online. After any save or load, the state table holds
+-- a reference to that same table (bind_item.script:123-131). Before that this is nil.
+local function get_offline_uses_table()
+    return alife_storage_manager.get_state().item_remaining_uses
+end
+
+-- Condition has the same trap. Only weapons, outfits and helmets send it back to the
+-- server object, so for anything else the packet holds what the item spawned with.
+-- bind_item and item_device track the live value, shared the same way as uses.
+local function get_live_condition(se_obj, packet_condition)
+    local obj = level.object_by_id(se_obj.id)
+    if obj then
+        return obj:condition()
+    end
+
+    local state = alife_storage_manager.get_state()
+    local condition = state.item_condition and state.item_condition[se_obj.id]
+    if condition == nil then
+        condition = state.device_condition and state.device_condition[se_obj.id]
+    end
+    if condition == nil then
+        condition = packet_condition
+    end
+    return condition
+end
+
 function serialize_item(se_obj)
     local section = se_obj:section_name()
     local stash_item_data = {
@@ -194,6 +235,12 @@ function serialize_item(se_obj)
         clsid = get_clsid(se_obj),
         section = section
     }
+
+    local is_sun = section == 'af_sun'
+
+    if is_sun then
+        debug_write("Serializing af_sun item: " .. print_table(se_obj))
+    end
 
     if IsWeapon(se_obj) then
         debug_write("Gathering weapon data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
@@ -241,13 +288,25 @@ function serialize_item(se_obj)
         stash_item_data.custom_data = data.custom_data
     end
 
+    stash_item_data.condition = get_live_condition(se_obj, stash_item_data.condition)
+
     if IsItem("multiuse", section) then
         local obj = level.object_by_id(se_obj.id)
 
 		if obj then
             stash_item_data.uses = obj:get_remaining_uses()
         else
-            debug_write("Unable to find object for multiuse item section:" .. section .. " id:" .. se_obj.id)
+            local offline_uses = get_offline_uses_table()
+            stash_item_data.uses = offline_uses and offline_uses[se_obj.id]
+            debug_write("Multiuse item offline section:" .. section .. " id:" .. se_obj.id .. " uses:" .. tostring(stash_item_data.uses))
+        end
+    end
+
+    if IsArtefact(se_obj) then
+        local obj_state = alife_storage_manager.get_se_obj_state(se_obj, true)
+        if (obj_state) then 
+            debug_write("Saved offline condition for PBA " .. se_obj:section_name() .. " " .. se_obj.id .. ": " .. tostring(obj_state.offline_condition))
+            stash_item_data.offline_condition = obj_state.offline_condition
         end
     end
 
@@ -271,7 +330,7 @@ function restore_item(section, position, level_vertex_id, game_vertex_id, item_d
         or string.find(section, "bad_psy_helmet")
         or string.find(section, "wpn_binoc_inv") -- For whatever reason this crashes things sometimes.
         or (string.find(section, "pda") and not string.find(section, "device_pda_1") and not string.find(section, "device_pda_2") and not string.find(section, "device_pda_3")) then
-        debug_write("Not restoring quest item " .. section)
+            debug_write("Not restoring quest item " .. section)
         return
     end
 
@@ -280,13 +339,16 @@ function restore_item(section, position, level_vertex_id, game_vertex_id, item_d
     local se_obj = alife_create(section, position, level_vertex_id, game_vertex_id, parent_item_id, state)
 
     if se_obj then      
+        local is_sun = section == 'af_sun'
         --debug_write("Created item " .. se_obj:name())
 
-        if item_data then
-            local item_processor = itms_manager.get_item_processor()
+        if is_sun then
+            debug_write("Created af_sun item: " .. print_table(se_obj))
+        end
 
+        if item_data then
             if IsWeapon(se_obj) then
-                --debug_write("Creating weapon data for " .. se_obj:name() .. " " ..se_obj.id .. ".")
+                debug_write("Restoring weapon data for " .. section .. " " ..se_obj.id .. ".")
 
                 local data = utils_stpk.get_weapon_data(se_obj)
 
@@ -304,7 +366,7 @@ function restore_item(section, position, level_vertex_id, game_vertex_id, item_d
 
                 utils_stpk.set_weapon_data(data, se_obj)
             elseif IsAmmo(se_obj) then
-                --debug_write("Creating ammo data for " .. se_obj:name() .. " " .. se_obj.id .. ".")
+                debug_write("Restoring ammo data for " .. section .. " " ..se_obj.id .. ".")
 
                 local data = utils_stpk.get_ammo_data(se_obj)
 
@@ -318,7 +380,7 @@ function restore_item(section, position, level_vertex_id, game_vertex_id, item_d
 
                 utils_stpk.set_ammo_data(data, se_obj)
             else
-                --roguelite_manager.debug_write("Creating item data " .. se_obj:name() .. " " .. se_obj.id ..".")
+                debug_write("Restoring item data for " .. section .. " " ..se_obj.id .. ".")
 
                 local data = utils_stpk.get_item_data(se_obj)
 
@@ -332,21 +394,44 @@ function restore_item(section, position, level_vertex_id, game_vertex_id, item_d
                 utils_stpk.set_item_data(data, se_obj)
             end
 
-            alife():register(se_obj)
+            if item_data.offline_condition then
+                debug_write("Updating item offline condition " .. section .. " " .. item_data.offline_condition ..".")
+                local m_data = alife_storage_manager.get_se_obj_state(se_obj, true)
+                if (m_data) then 
+                    m_data.offline_condition = item_data.offline_condition
+                end
+            end
+
+            -- register frees what it is given and returns a new object.
+            se_obj = alife():register(se_obj)
 
             if item_parts and item_data.parts_condition then
                 item_parts.set_parts_con(se_obj.id, dup_table(item_data.parts_condition))
             end
 
-            if item_data.uses and item_data.uses ~= 0 then
-                roguelite_manager.debug_write("Updating item uses " .. section .. " " .. item_data.uses ..".")
-
-                item_processor:Process_Item(nil, se_obj.id, {
-                    uses = item_data.uses                    
-                })
+            -- bind_item applies this on the item's first update, however long the
+            -- client object takes to spawn. ItemProcessor below gives up after a few.
+            local offline_uses = get_offline_uses_table()
+            if offline_uses and item_data.uses then
+                offline_uses[se_obj.id] = item_data.uses
             end
-        else 
-            alife():register(se_obj)
+
+            local process_data = {
+                uses = item_data.uses,
+                cond = item_data.condition,
+            }
+
+            if process_data.cond or process_data.uses then
+                debug_write("Updating item data " .. section .. " uses:" .. tostring(process_data.uses) .. " cond:" .. tostring(process_data.cond) ..".")
+
+                local item_processor = itms_manager.get_item_processor()
+                local debug = item_processor.Debug
+                item_processor.Debug = true
+                item_processor:Process_Item(nil, se_obj.id, process_data)
+                item_processor.Debug = debug
+            end
+        else
+            se_obj = alife():register(se_obj)
         end
     end
 
@@ -383,7 +468,7 @@ local function actor_on_before_death(whoID, flags)
     for name, module in pairs(modules) do
         if module.roguelite_save_state then 
             debug_write("Saving data "..name)
-            module.roguelite_save_state(save_data)
+            call_module(name, module.roguelite_save_state, save_data)
         end
     end
 

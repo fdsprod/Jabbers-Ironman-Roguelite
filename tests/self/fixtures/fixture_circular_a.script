@@ -1,0 +1,3 @@
+-- Reads its partner at file scope; the partner reads back.
+local partner = fixture_circular_b
+A_SAW_PARTNER = partner ~= nil

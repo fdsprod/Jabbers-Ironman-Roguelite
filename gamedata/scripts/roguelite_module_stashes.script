@@ -63,7 +63,7 @@ local function restore_prior_state_stashes_v1(data)
     --     state.player_created_stashes = {}
     -- end
 
-    for _, stash_data in pairs(data.stashes) do
+    for _, stash_data in pairs(data.stashes or {}) do
         if stash_data then
             roguelite_manager.debug_write("Restoring stash")
 
@@ -134,7 +134,7 @@ local function restore_prior_state_money_v1(data)
     -- you start with in a new game.
     if roguelite_manager_mcm.get_config("is_money_restore_enabled", true) and data.money and db.actor:money() < data.money then
         roguelite_manager.debug_write("Restoring money")
-        db.actor:give_money(data.money)
+        db.actor:give_money(data.money - db.actor:money())
     end
 end
 
@@ -152,17 +152,22 @@ local function try_spawn_stash(box)
 
     local se_box = alife_object(box:id())
     local item_processor = itms_manager.get_item_processor()
-
+    local debug = item_processor.Debug
     item_processor.Debug = true
-
     for _, item_data in pairs(stash.items) do
         local section = item_data.section
-        roguelite_manager.restore_item(section, se_box.position, se_box.m_level_vertex_id, se_box.m_game_vertex_id, item_data, se_box.id, false)
-    end
+        local se_item = roguelite_manager.restore_item(section, se_box.position, se_box.m_level_vertex_id, se_box.m_game_vertex_id, item_data, se_box.id, false)
 
+        -- The item has a new id this life, and may go offline before it is ever
+        -- put in a box again.
+        if se_item and item_data.uses then
+            m_data.item_uses_data[se_item.id] = item_data.uses
+        end
+    end
     level.map_remove_object_spot(box:id(), "treasure")
 
     item_processor:update()
+    item_processor.Debug = debug
     m_data.stashes[box:id()] = nil
 end
 
@@ -187,10 +192,12 @@ local function save_stash(se_obj, section_name, stash_data, sim)
         if state and state.workshop_stashes then
             for workshop_id, stash_id in pairs(state.workshop_stashes) do
                 if stash_id == se_obj.id then
-                    local p_se_obj = sim:object(workshop_id)  
-                    roguelite_manager.debug_write("Saving parent item "..p_se_obj:section_name())
-                    parent_obj =  roguelite_manager.serialize_se_obj(p_se_obj)
-                    parent_obj.is_container = false
+                    local p_se_obj = sim:object(workshop_id)
+                    if p_se_obj then
+                        roguelite_manager.debug_write("Saving parent item "..p_se_obj:section_name())
+                        parent_obj =  roguelite_manager.serialize_se_obj(p_se_obj)
+                        parent_obj.is_container = false
+                    end
                     break;
                 end
             end
@@ -249,7 +256,9 @@ local function get_player_stashes()
 
                 local stash_item = roguelite_manager.serialize_item(se_obj)
 
-                if IsItem("multiuse", stash_item.section) and m_data.item_uses_data[stash_item.id]then
+                -- Only a fallback. The note is from when the item went in the box,
+                -- so anything serialize_item found is newer.
+                if stash_item.uses == nil and IsItem("multiuse", stash_item.section) then
                     stash_item.uses = m_data.item_uses_data[se_obj.id]
                 end
 
@@ -296,6 +305,10 @@ local function load_state(data)
     roguelite_manager.debug_write("Loading stash data.")
 
     local stashes_version = data.roguelite_manager.stashes_version
+
+    if not stashes_version then
+        return
+    end
 
     if stashes_version >= 2 then
         if data.roguelite_manager.money then
@@ -363,7 +376,7 @@ local function actor_on_item_put_in_box(box, item)
 
     local section_name = box:section()
 
-    if table_has_value(placeable_containers_section_names, section_name) then
+    if not table_has_value(placeable_containers_section_names, section_name) then
         return
     end
 
@@ -383,21 +396,23 @@ local function actor_on_stash_remove(data)
 end
 
 function roguelite_load_state(save_data)
-    if roguelite_manager_mcm.get_config("is_stash_restore_enabled", true) then
-        if save_data.stashes_version >= 2 then
-            restore_prior_state_money_v1(save_data)
-        end
-        if save_data.stashes_version >= 1 then
-            restore_prior_state_stashes_v1(save_data)
-        end
+    local stashes_version = save_data.stashes_version or 0
+
+    if stashes_version >= 2 then
+        restore_prior_state_money_v1(save_data)
+    end
+
+    if stashes_version >= 1 and roguelite_manager_mcm.get_config("is_stash_restore_enabled", true) then
+        restore_prior_state_stashes_v1(save_data)
     end
 end
 
 function roguelite_save_state(save_data)
+    save_data.stashes_version = m_data.stashes_version
+    save_data.money = db.actor:money()
+
     if roguelite_manager_mcm.get_config("is_stash_restore_enabled", true) then
-        save_data.stashes_version = m_data.stashes_version
         save_data.stashes = get_player_stashes()
-        save_data.money = db.actor:money()
     end
 end
 
