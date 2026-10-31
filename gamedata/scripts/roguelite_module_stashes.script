@@ -270,7 +270,7 @@ local function get_player_stashes()
     return stash_data
 end
 
--- Dropping the id as well means a later object that reuses it keeps its own marker.
+-- Dropping the id as well stops a later object reusing it being swept for this stash.
 local function remove_stash_marker(index)
     level.map_remove_object_spot(m_data.spawned_stashes[index], "treasure_player")
     table.remove(m_data.spawned_stashes, index)
