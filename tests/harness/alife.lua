@@ -482,6 +482,21 @@ end
 --- How the NPC stands with the actor from now on. A game_object.relation value.
 function M.set_relation(id, relation) records[id]._relation = relation end
 
+--- A server object that holds a story id and is no trader. character_name and reputation
+--- are bound on cse_alife_trader_abstract only (xrServer_Objects_ALife_Monsters_script.cpp:74,
+--- :79), so this one has neither, and calling them raises. story_objects.register keeps the
+--- first holder of an id (story_objects.script:6-14), which is how it can shut the trader
+--- out. GUESS: no stock object or GAMMA mod found does this. A mod could.
+function M.non_trader_story_object(story_id)
+    local rec = new_record("story_prop")
+    rec.registered = true
+    rec.character_name = nil
+    rec.set_character_name = nil
+    rec._story_id = story_id
+    _G.story_objects.register(rec.id, story_id)
+    return rec.id
+end
+
 --- An online NPC with no db.storage entry, which makes is_trader raise. It stays in
 --- db.OnlineStalkers.
 function M.drop_storage(id) _G.db.storage[id] = nil end

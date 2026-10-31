@@ -738,6 +738,28 @@ describe("trader reputation", function()
         end)
     end)
 
+    -- Red until the capture checks what it was handed. save_state has no call_module around
+    -- it, so the raise reaches the engine on every save and level change. At death
+    -- call_module catches it, but only after save_data.trader_rep was left unset.
+    for _, story_id in ipairs{ "esc_m_trader", "red_forester_tech" } do
+        describe("given " .. story_id .. " on an object that is not a trader", function()
+            beforeEach(function()
+                model.non_trader_story_object(story_id)
+            end)
+
+            it("does not raise on a save", function()
+                met_trader(NAME, 1000)
+                expect(function() H.save() end).never.toThrow()
+            end)
+
+            it("still writes the other traders' rep at death", function()
+                met_trader(NAME, 1000)
+                H.die()
+                expect(model.rep_of(next_life())).toBeCloseTo(980)
+            end)
+        end)
+    end
+
     describe("given a state file of another version", function()
         it("does not restore from it", function()
             roguelite_module_trader_rep.roguelite_load_state{ trader_rep_version = 2, trader_rep = { [NAME] = 1000 } }
