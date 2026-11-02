@@ -92,6 +92,20 @@ describe("harness/alife", function()
         end)
     end)
 
+    describe("alife_create()", function()
+        -- _g.script:2115-2118
+        it("logs an error and spawns nothing given an undefined section", function()
+            local se = alife_create("no_such_section", vector(), 1, 1)
+            expect(se).toBeNil()
+            expect(H.fakes.call_count("printe")).toBe(1)
+        end)
+
+        it("logs nothing given a defined section", function()
+            alife_create("vodka", vector(), 1, 1)
+            expect(H.fakes.call_count("printe")).toBe(0)
+        end)
+    end)
+
     describe("alife():register()", function()
         local box, se, id
 
