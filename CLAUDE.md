@@ -75,7 +75,7 @@ module reads another through its global name, such as `roguelite_manager.debug_w
 | `roguelite_module_player_corpse.script` | The body holding what the player died with. Wraps `death_manager`. |
 | `roguelite_module_placeables.script` | Hideout furniture. Position only. |
 | `roguelite_module_character_rep.script` | Actor rank, reputation and faction goodwill. |
-| `roguelite_module_trader_rep.script` | Trader reputation. |
+| `roguelite_module_trader_rep.script` | Trader reputation. Remembers each met trader by name, and holds restored values until the trader comes online. |
 
 Any `roguelite_module_*.script` is a module, third-party ones included, so the README's API
 is public: `roguelite_save_state(data)`, `roguelite_load_state(data)`,
@@ -128,6 +128,9 @@ while the object is online. An item in a stash on another level has no client ob
   nothing in the engine brings them back. `bind_item` restores them on its first update.
 - **`ItemProcessor` gives up.** It drops an id after about 12 updates with no client object.
 - **Do not use `get_stalker_data` on the actor.** The actor's packet is laid out differently.
+- **Two binders make a trader.** Most are stalkers, in `db.OnlineStalkers` with
+  net callbacks. Sidorovich and the Forester are `AI_TRD_S`, bound by `bind_trader`, with
+  neither, so reach them by story id.
 - **Clsids are runtime ordinals**, so one saved in the state file can go stale if the
   modlist changes. Prefer deciding from the section.
 

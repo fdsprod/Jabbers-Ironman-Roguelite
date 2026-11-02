@@ -237,6 +237,7 @@ end
 --- opts.id_base     where object ids start.
 function M.boot_game(opts)
     opts = opts or {}
+    M.first_update_pending = false
     M.boot{ actor = false, script_dir = opts.script_dir }
 
     if not opts.keep_files then M.life = 0 end
@@ -272,9 +273,20 @@ function M.boot_game(opts)
     return M
 end
 
---- Run `n` frames (default 1).
+--- Run `n` frames (default 1). Each ends with the actor binder's update: the first one
+--- after a load sends actor_on_first_update (bind_stalker.script:216-218,
+--- bind_stalker_ext.script:77), and every one sends actor_on_update
+--- (bind_stalker.script:310, bind_stalker_ext.script:104). The callbacks get the binder.
 function M.frames(n)
-    for _ = 1, n or 1 do M.alife.frame() end
+    for _ = 1, n or 1 do
+        M.alife.frame()
+        local binder = { object = _G.db.actor }
+        if M.first_update_pending then
+            M.first_update_pending = false
+            SendScriptCallback("actor_on_first_update", binder, 16)
+        end
+        SendScriptCallback("actor_on_update", binder, 16)
+    end
 end
 
 --- The actor dies. roguelite_manager serializes everything to the state file.
@@ -302,17 +314,26 @@ function M.reload(name)
     M.alife.import(saved)
     M.alife.attach_actor(_G.db.actor)
     _G.alife_storage_manager.CALifeStorageManager_load("saves/" .. (name or "quicksave") .. ".scop")
+    -- The actor's net_spawn (bind_stalker.script:58, bind_stalker_ext.script:61). GUESS: the
+    -- NPC clients land on the first frame, so they exist by the first update but not here.
+    SendScriptCallback("on_game_load")
+    M.first_update_pending = true
     return M
 end
 
 --- The next life: a new game. Everything is gone except the state file. Ids start
 --- elsewhere, and the mod's first-update hook restores from the file.
+---
+--- opts.before_first_update  builds the new game's world, which exists before the
+--- actor's first update. An NPC made here is online or offline at the restore.
 function M.new_life(opts)
     opts = opts or {}
     M.life = M.life + 1
     opts.keep_files = true
     opts.id_base = 1000 + M.life * 3000
     M.boot_game(opts)
+    if opts.before_first_update then opts.before_first_update() end
+    SendScriptCallback("on_game_load")
     SendScriptCallback("actor_on_first_update")
     return M
 end

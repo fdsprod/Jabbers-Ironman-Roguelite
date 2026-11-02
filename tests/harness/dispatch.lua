@@ -124,6 +124,8 @@ M.CALLBACK_NAMES = {
     "main_menu_on_init",
     "actor_on_item_put_in_box",
     "ActorMenu_on_item_drag_drop",
+    -- Sent as (npc) by xr_motivator.script:226, declared at axr_main.script:114.
+    "npc_on_net_destroy",
 }
 
 function M.install(env)
