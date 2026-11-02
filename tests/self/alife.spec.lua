@@ -194,6 +194,26 @@ describe("harness/alife", function()
         end)
     end)
 
+    describe("H.define()", function()
+        -- _g.script:3271
+        it("makes a section bound to item_device.bind a device", function()
+            H.define("detector_simple", { script_binding = "item_device.bind" })
+            expect(IsItem("device", "detector_simple")).toBe(true)
+        end)
+
+        it("does not make a section with another binding a device", function()
+            H.define("prt_w_barrel_1", { script_binding = "bind_item.bind" })
+            expect(IsItem("device", "prt_w_barrel_1")).toBeNil()
+        end)
+
+        -- _ITM is rebuilt by every boot, as Parse_ITM rebuilds it in the game.
+        it("keeps a device a device in the next life", function()
+            H.define("detector_simple", { script_binding = "item_device.bind" })
+            H.new_life()
+            expect(IsItem("device", "detector_simple")).toBe(true)
+        end)
+    end)
+
     describe("marshal", function()
         it("round-trips numbers, strings, booleans and nested tables", function()
             local v = { a = 1, b = "x", c = true, d = { [7] = 0.5 } }

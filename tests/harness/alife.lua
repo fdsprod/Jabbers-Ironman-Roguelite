@@ -352,8 +352,13 @@ end
 --- Declare an item or stash section. A max_uses above 1 on a use_condition item
 --- makes it multiuse (_g.script:3298-3302). All 75 such sections in the stock
 --- configs bind to bind_item.bind, so that is the default here.
+--- A script_binding of item_device.bind makes it a device (_g.script:3271). That
+--- binder is not modelled: such an item keeps its condition on the client object.
 function M.define(section, def)
     def = def or {}
+    if def.script_binding == "item_device.bind" then
+        _G._ITM.device[section] = true
+    end
     if def.max_uses and def.max_uses > 1 then
         def.script_binding = def.script_binding or "bind_item.bind"
         _G._ITM.multiuse[section] = def.max_uses

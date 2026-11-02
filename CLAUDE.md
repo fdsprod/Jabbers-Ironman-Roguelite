@@ -132,7 +132,9 @@ while the object is online. An item in a stash on another level has no client ob
   net callbacks. Sidorovich and the Forester are `AI_TRD_S`, bound by `bind_trader`, with
   neither, so reach them by story id.
 - **Clsids are runtime ordinals**, so one saved in the state file can go stale if the
-  modlist changes. Prefer deciding from the section.
+  modlist changes. Decide from the section, or from the live clsid at save time and store
+  the answer, as `serialize_item` does with `degrades_by_class`. The saved clsid is only
+  the fallback for state files older than that field.
 
 ## MCM
 
